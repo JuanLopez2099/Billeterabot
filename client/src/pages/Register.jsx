@@ -7,6 +7,7 @@ function Register() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [registroExitoso, setRegistroExitoso] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -24,10 +25,21 @@ function Register() {
       return;
     }
 
-    console.log('Usuario creado en Supabase Auth:', data.user);
-    
+    console.log('Usuario creado en Supabase Auth (sin confirmar aún):', data.user);
+    // En el próximo paso, aquí llamaremos a Express para
+    // guardar nombre + email en la tabla `usuarios`.
 
+    setRegistroExitoso(true);
     setCargando(false);
+  }
+
+  if (registroExitoso) {
+    return (
+      <div>
+        <h1>¡Revisa tu correo!</h1>
+        <p>Te enviamos un link de confirmación a {email}. Haz clic ahí para activar tu cuenta.</p>
+      </div>
+    );
   }
 
   return (
