@@ -2,9 +2,27 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { AuthContext } from './AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  async function asegurarUsuarioEnBackend(sessionUser) {
+    try {
+      await fetch(`${API_URL}/usuarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: sessionUser.id,
+          nombre: sessionUser.user_metadata?.nombre || sessionUser.email,
+          email: sessionUser.email,
+        }),
+      });
+    } catch (err) {
+      console.error('Error al sincronizar usuario con el backend:', err);
+    }
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -13,8 +31,11 @@ export function AuthProvider({ children }) {
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setUser(session?.user ?? null);
+        if (event === 'SIGNED_IN' && session?.user) {
+          asegurarUsuarioEnBackend(session.user);
+        }
       }
     );
 
