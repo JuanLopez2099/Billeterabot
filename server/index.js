@@ -27,3 +27,22 @@ app.get('/test-db', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
+
+app.post('/usuarios', async (req, res) => {
+  const { id, nombre, email } = req.body;
+
+  if (!id || !nombre || !email) {
+    return res.status(400).json({ error: 'Faltan datos: id, nombre y email son obligatorios' });
+  }
+
+  const { data, error } = await supabase
+    .from('usuarios')
+    .insert([{ id, nombre, email }])
+    .select();
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.status(201).json({ usuario: data[0] });
+});
