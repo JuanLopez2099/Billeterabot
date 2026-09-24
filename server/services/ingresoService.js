@@ -6,29 +6,32 @@ function fechaDeHoy() {
 }
 
 function esFechaValida(fecha) {
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha))
-        return false;
-    const d = new Date(fecha + 'T00:00:00Z');
-    return !Number.isNan(d.getTime()) && d.toISOString().slice(0, 10) === 10
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false;
+  const d = new Date(fecha + 'T00:00:00Z');
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === fecha;
 }
 
-async function crearIngreso(usuarioId, {monto, cuentaId, descripcion, fecha}) {
-    const montoNum = Number(monto);
-    if (!Number.isInteger(montoNum) || montoNum <= 0) {
-      throw errorValidacion('El monto debe ser un número entero mayor que 0');
-    }
-    if (!cuentaId) {
-      throw errorValidacion('La cuenta es obligatoria');
-    }
-    const fechaFinal = fecha || fechaDeHoy();
-    if (!esFechaValida(fechaFinal)) {
-      throw errorValidacion('La fecha debe tener el formato AAAA-MM-DD y ser válida');
-    }
-    if (fechaFinal > fechaDeHoy()) {
-      throw errorValidacion('La fecha no puede ser futura');
-    }
+async function crearIngreso(usuarioId, { monto, cuentaId, descripcion, fecha }) {
+  const montoNum = Number(monto);
+  if (!Number.isInteger(montoNum) || montoNum <= 0) {
+    throw errorValidacion('El monto debe ser un número entero mayor que 0');
+  }
 
-    const { data, error } = await supabase
+  if (!cuentaId) {
+    throw errorValidacion('La cuenta es obligatoria');
+  }
+
+  const fechaFinal = fecha || fechaDeHoy();
+
+  if (!esFechaValida(fechaFinal)) {
+    throw errorValidacion('La fecha debe tener el formato AAAA-MM-DD y ser válida');
+  }
+
+  if (fechaFinal > fechaDeHoy()) {
+    throw errorValidacion('La fecha no puede ser futura');
+  }
+
+  const { data, error } = await supabase
     .from('ingresos')
     .insert([{
       usuario_id: usuarioId,
@@ -40,19 +43,20 @@ async function crearIngreso(usuarioId, {monto, cuentaId, descripcion, fecha}) {
     .select()
     .single();
 
-    if (error) {
-      if (error.code === '22P02' || (error.code === '23503' && error.message.includes('cuenta_id'))) {
-        throw errorValidacion('La cuenta indicada no existe');
-      }
-      throw error;
+  if (error) {
+    if (error.code === '22P02' || (error.code === '23503' && error.message.includes('cuenta_id'))) {
+      throw errorValidacion('La cuenta indicada no existe');
     }
-    return data;
+    throw error;
+  }
+
+  return data;
 }
 
-async function listarIngresos(usuarioId, orden='desc') {
-    const ascendente = orden === 'asc';
+async function listarIngresos(usuarioId, orden = 'desc') {
+  const ascendente = orden === 'asc';
 
-    const { data, error } = await supabase
+  const { data, error } = await supabase
     .from('ingresos')
     .select('id, monto, descripcion, fecha, creado_en, cuenta:cuentas(id, nombre)')
     .eq('usuario_id', usuarioId)
