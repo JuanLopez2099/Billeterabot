@@ -1,12 +1,10 @@
-// ResetPassword.jsx
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { useAuth } from '../context/useAuth';
 import AuthLayout from '../components/AuthLayout';
 
-function ResetPassword() {
-  const { salirDeRecoveryMode, signOut } = useAuth();
-  const [password, setPassword] = useState('');
+function ForgotPassword({ onVolver }) {
+  const [email, setEmail] = useState('');
+  const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
 
@@ -15,42 +13,61 @@ function ResetPassword() {
     setError('');
     setCargando(true);
 
-    const { error: updateError } = await supabase.auth.updateUser({ password });
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      email,
+      { redirectTo: window.location.origin }
+    );
 
-    if (updateError) {
-      setError(updateError.message);
+    if (resetError) {
+      setError(resetError.message);
       setCargando(false);
       return;
     }
 
-    salirDeRecoveryMode();
-    await signOut();
+    setEnviado(true);
+    setCargando(false);
+  }
+
+  if (enviado) {
+    return (
+      <AuthLayout titulo="Revisa tu correo">
+        <p className="auth-subtitle">
+          Si {email} está registrado, te enviamos un link para restablecer tu contraseña.
+        </p>
+        <button className="auth-button-primary" onClick={onVolver}>
+          Volver a iniciar sesión
+        </button>
+      </AuthLayout>
+    );
   }
 
   return (
-    <AuthLayout titulo="Nueva contraseña" subtitulo="Define una nueva contraseña para tu cuenta">
+    <AuthLayout>
       {error && <p className="auth-error">{error}</p>}
 
       <form onSubmit={handleSubmit}>
         <div className="auth-field">
-          <label className="auth-label">Nueva contraseña</label>
+          <label className="auth-label">Correo</label>
           <input
             className="auth-input"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            type="email"
+            placeholder="tucorreo@ejemplo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
-            minLength={6}
           />
         </div>
 
         <button className="auth-button-primary" type="submit" disabled={cargando}>
-          {cargando ? 'Guardando...' : 'Guardar nueva contraseña'}
+          {cargando ? 'Enviando...' : 'Enviar link de recuperación'}
         </button>
       </form>
+
+      <div className="auth-link-row">
+        <button className="auth-link" onClick={onVolver}>Volver</button>
+      </div>
     </AuthLayout>
   );
 }
 
-export default ResetPassword;
+export default ForgotPassword;
