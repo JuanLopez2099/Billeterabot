@@ -115,4 +115,21 @@ async function editarIngreso(usuarioId, ingresoId, { monto, cuentaId, descripcio
   return data[0];
 }
 
+async function eliminarIngreso(usuarioId, ingresoId) {
+  const { data, error } = await supabase
+    .from('ingresos')
+    .delete()
+    .eq('id', ingresoId)
+    .eq('usuario_id', usuarioId)
+    .select();
+
+  if (error) throw error;
+
+  if (data.length === 0) {
+    const err = new Error('Ingreso no encontrado');
+    err.status = 404;
+    throw err;
+  }
+}
+
 module.exports = { crearIngreso, listarIngresos };
