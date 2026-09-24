@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const supabase = require('./config/supabaseClient');
 const requireAuth = require('./middleware/auth');
+const ingresosRoutes = require('./routes/ingresos');
 
 const app = express();
 app.use(cors());
@@ -34,6 +35,8 @@ app.post('/usuarios', requireAuth, async (req, res) => {
 
   res.status(200).json({ usuario: data[0] });
 });
+
+app.use('/ingresos', ingresosRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
