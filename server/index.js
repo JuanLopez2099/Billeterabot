@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const supabase = require('./config/supabaseClient');
+const requireAuth = require('./middleware/auth');
 
 const app = express();
 app.use(cors());
@@ -14,15 +15,12 @@ app.get('/', (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
-
-app.post('/usuarios', async (req, res) => {
-  const { id, nombre, email } = req.body;
-
-  if (!id || !nombre || !email) {
-    return res.status(400).json({ error: 'Faltan datos: id, nombre y email son obligatorios' });
+app.post('/usuarios', requireAuth, async (req, res) => {
+  const { nombre } = req.body;
+  const id = req.user.id;         
+  const email = req.user.email;   
+  if (!nombre) {
+    return res.status(400).json({ error: 'El nombre es obligatorio' });
   }
 
   const { data, error } = await supabase
@@ -35,4 +33,8 @@ app.post('/usuarios', async (req, res) => {
   }
 
   res.status(200).json({ usuario: data[0] });
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

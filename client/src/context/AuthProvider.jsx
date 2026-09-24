@@ -9,27 +9,27 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [recoveryMode, setRecoveryMode] = useState(false);
 
-  async function asegurarUsuarioEnBackend(sessionUser) {
-    try {
-      const nombre =
-        sessionUser.user_metadata?.nombre ||
-        sessionUser.user_metadata?.full_name ||
-        sessionUser.user_metadata?.name ||
-        sessionUser.email;
+  async function asegurarUsuarioEnBackend(session) {
+  try {
+    const sessionUser = session.user;
+    const nombre =
+      sessionUser.user_metadata?.nombre ||
+      sessionUser.user_metadata?.full_name ||
+      sessionUser.user_metadata?.name ||
+      sessionUser.email;
 
-      await fetch(`${API_URL}/usuarios`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: sessionUser.id,
-          nombre,
-          email: sessionUser.email,
-        }),
-      });
-    } catch (err) {
-      console.error('Error al sincronizar usuario con el backend:', err);
-    }
+    await fetch(`${API_URL}/usuarios`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ nombre }),
+    });
+  } catch (err) {
+    console.error('Error al sincronizar usuario con el backend:', err);
   }
+}
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -41,13 +41,13 @@ export function AuthProvider({ children }) {
       (event, session) => {
         if (event === 'PASSWORD_RECOVERY') {
           setRecoveryMode(true);
-          return; // No tratamos esto como una sesión normal todavía
+          return; 
         }
 
         setUser(session?.user ?? null);
 
         if (event === 'SIGNED_IN' && session?.user) {
-          asegurarUsuarioEnBackend(session.user);
+          asegurarUsuarioEnBackend(session);
         }
       }
     );
