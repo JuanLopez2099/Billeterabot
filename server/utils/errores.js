@@ -4,7 +4,7 @@ function errorValidacion(mensaje) {
     return err
 }
 
-function manejoError(err, res) {
+function manejarError(err, res) {
     if(err.status) {
         return res.status(err.status).json({ error: err.message })
     }
