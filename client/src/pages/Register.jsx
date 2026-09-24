@@ -9,6 +9,15 @@ function Register() {
   const [cargando, setCargando] = useState(false);
   const [registroExitoso, setRegistroExitoso] = useState(false);
 
+  async function handleGoogleLogin() {
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    },
+  });
+}
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -75,6 +84,10 @@ function Register() {
       />
       <button type="submit" disabled={cargando}>
         {cargando ? 'Creando...' : 'Registrarme'}
+      </button>
+      
+      <button type="button" onClick={handleGoogleLogin}>
+        Continuar con Google
       </button>
     </form>
   );
