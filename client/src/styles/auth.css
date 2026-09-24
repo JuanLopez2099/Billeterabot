@@ -1,0 +1,152 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #dde6da 0%, #f7f3ea 100%);
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 40px;
+}
+
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.auth-logo-badge {
+  width: 40px;
+  height: 40px;
+  background: #1f4d3d;
+  color: white;
+  font-weight: 700;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.auth-logo-text {
+  font-weight: 700;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+.auth-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #16342a;
+  margin: 0 0 8px 0;
+}
+
+.auth-subtitle {
+  color: #6b7280;
+  margin: 0 0 28px 0;
+}
+
+.auth-field {
+  margin-bottom: 18px;
+}
+
+.auth-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e2d9c8;
+  background: #fbf8f2;
+  border-radius: 10px;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: #1f4d3d;
+}
+
+.auth-button-primary {
+  width: 100%;
+  padding: 14px;
+  background: #1f4d3d;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.auth-button-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-link-row {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.auth-link {
+  background: none;
+  border: none;
+  color: #16342a;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.auth-button-google {
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e2d9c8;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.auth-error {
+  color: #dc2626;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
