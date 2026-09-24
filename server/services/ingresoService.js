@@ -12,7 +12,7 @@ function esFechaValida(fecha) {
     return !Number.isNan(d.getTime()) && d.toISOString().slice(0, 10) === 10
 }
 
-async function crearIngreso(usuarioId, {monto, cuentaId, descripcion, fehca}) {
+async function crearIngreso(usuarioId, {monto, cuentaId, descripcion, fecha}) {
     const montoNum = Number(monto);
     if (!Number.isInteger(montoNum) || montoNum <= 0) {
       throw errorValidacion('El monto debe ser un número entero mayor que 0');
