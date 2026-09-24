@@ -1,6 +1,8 @@
+// ResetPassword.jsx
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/useAuth';
+import AuthLayout from '../components/AuthLayout';
 
 function ResetPassword() {
   const { salirDeRecoveryMode, signOut } = useAuth();
@@ -22,27 +24,32 @@ function ResetPassword() {
     }
 
     salirDeRecoveryMode();
-    await signOut(); 
+    await signOut();
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Nueva contraseña</h1>
+    <AuthLayout titulo="Nueva contraseña" subtitulo="Define una nueva contraseña para tu cuenta">
+      {error && <p className="auth-error">{error}</p>}
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <div className="auth-field">
+          <label className="auth-label">Nueva contraseña</label>
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </div>
 
-      <input
-        type="password"
-        placeholder="Nueva contraseña"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        minLength={6}
-      />
-      <button type="submit" disabled={cargando}>
-        {cargando ? 'Guardando...' : 'Guardar nueva contraseña'}
-      </button>
-    </form>
+        <button className="auth-button-primary" type="submit" disabled={cargando}>
+          {cargando ? 'Guardando...' : 'Guardar nueva contraseña'}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }
 
