@@ -7,6 +7,15 @@ function Login() {
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
 
+  async function handleGoogleLogin() {
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    },
+  });
+}
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -48,7 +57,12 @@ function Login() {
       <button type="submit" disabled={cargando}>
         {cargando ? 'Ingresando...' : 'Ingresar'}
       </button>
+      
+      <button type="button" onClick={handleGoogleLogin}>
+        Continuar con Google
+      </button>
     </form>
+
   );
 }
 
