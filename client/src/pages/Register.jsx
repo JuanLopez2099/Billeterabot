@@ -53,7 +53,7 @@ function Register({ onIrALogin }) {
   }
 
   return (
-    <AuthLayout titulo="Crear cuenta" subtitulo="Regístrate para empezar a controlar tus gastos">
+    <AuthLayout>
       {error && <p className="auth-error">{error}</p>}
 
       <form onSubmit={handleSubmit}>
@@ -109,7 +109,7 @@ function Register({ onIrALogin }) {
 
       <button className="auth-button-google" onClick={handleGoogleLogin}>
         <GoogleIcon />
-        Registrarme con Google
+        <span>Registrarme con Google</span>
       </button>
     </AuthLayout>
   );
