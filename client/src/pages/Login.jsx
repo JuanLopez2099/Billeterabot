@@ -1,20 +1,11 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
-function Login() {
+function Login({ onOlvidoPassword }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
-
-  async function handleGoogleLogin() {
-  await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin,
-    },
-  });
-}
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -31,7 +22,13 @@ function Login() {
       setCargando(false);
       return;
     }
+  }
 
+  async function handleGoogleLogin() {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
   }
 
   return (
@@ -57,12 +54,15 @@ function Login() {
       <button type="submit" disabled={cargando}>
         {cargando ? 'Ingresando...' : 'Ingresar'}
       </button>
-      
+
+      <button type="button" onClick={onOlvidoPassword}>
+        ¿Olvidaste tu contraseña?
+      </button>
+
       <button type="button" onClick={handleGoogleLogin}>
         Continuar con Google
       </button>
     </form>
-
   );
 }
 
