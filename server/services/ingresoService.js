@@ -67,4 +67,52 @@ async function listarIngresos(usuarioId, orden = 'desc') {
   return data;
 }
 
+async function editarIngreso(usuarioId, ingresoId, { monto, cuentaId, descripcion, fecha }) {
+  const montoNum = Number(monto);
+  if (!Number.isInteger(montoNum) || montoNum <= 0) {
+    throw errorValidacion('El monto debe ser un número entero mayor que 0');
+  }
+
+  if (!cuentaId) {
+    throw errorValidacion('La cuenta es obligatoria');
+  }
+
+  const fechaFinal = fecha || fechaDeHoy();
+
+  if (!esFechaValida(fechaFinal)) {
+    throw errorValidacion('La fecha debe tener el formato AAAA-MM-DD y ser válida');
+  }
+
+  if (fechaFinal > fechaDeHoy()) {
+    throw errorValidacion('La fecha no puede ser futura');
+  }
+
+  const { data, error } = await supabase
+    .from('ingresos')
+    .update({
+      cuenta_id: cuentaId,
+      monto: montoNum,
+      descripcion: descripcion ? String(descripcion).trim() : null,
+      fecha: fechaFinal,
+    })
+    .eq('id', ingresoId)
+    .eq('usuario_id', usuarioId)
+    .select();
+
+  if (error) {
+    if (error.code === '22P02' || (error.code === '23503' && error.message.includes('cuenta_id'))) {
+      throw errorValidacion('La cuenta indicada no existe');
+    }
+    throw error;
+  }
+
+  if (data.length === 0) {
+    const err = new Error('Ingreso no encontrado');
+    err.status = 404;
+    throw err;
+  }
+
+  return data[0];
+}
+
 module.exports = { crearIngreso, listarIngresos };
