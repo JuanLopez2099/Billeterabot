@@ -13,7 +13,7 @@ if (fechaFinal > fechaDeHoy()) {
 }
 
 async function crearIngreso(usuarioId, {monto, cuentaId, descripcion, fehca}) {
-    const monto = Number(monto);
+    const montoNum = Number(monto);
     if(monto.isInteger(montoNum) || monto <= 0)
         throw errorValidacion("El monto debe ser un numero entero mayor que 0")
 
