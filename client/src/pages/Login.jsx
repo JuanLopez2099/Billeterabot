@@ -33,7 +33,7 @@ function Login({ onOlvidoPassword, onIrARegistro }) {
   }
 
   return (
-    <AuthLayout titulo="Bienvenido" subtitulo="Inicia sesión para ver tus gastos">
+    <AuthLayout>
       {error && <p className="auth-error">{error}</p>}
 
       <form onSubmit={handleSubmit}>
@@ -82,7 +82,7 @@ function Login({ onOlvidoPassword, onIrARegistro }) {
 
       <button className="auth-button-google" onClick={handleGoogleLogin}>
         <GoogleIcon />
-        Continuar con Google
+        <span>Continuar con Google</span>
       </button>
     </AuthLayout>
   );
