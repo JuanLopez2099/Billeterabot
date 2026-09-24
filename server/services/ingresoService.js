@@ -12,22 +12,20 @@ function esFechaValida(fecha) {
     return !Number.isNan(d.getTime()) && d.toISOString().slice(0, 10) === 10
 }
 
-if (fechaFinal > fechaDeHoy()) {
-  throw errorValidacion('La fecha no puede ser futura');
-}
-
 async function crearIngreso(usuarioId, {monto, cuentaId, descripcion, fehca}) {
     const montoNum = Number(monto);
-    if(monto.isInteger(montoNum) || monto <= 0)
-        throw errorValidacion("El monto debe ser un numero entero mayor que 0")
-
-    if(!cuentaId)
-        return errorValidacion("La cuenta es obligatoria")
-
-    const fechaFinal = fecha ||  fechaDeHoy();
-
-    if(!esFechaValida(fechaFinal)) {
-        return errorValidacion("La fecha debe tener el formato AAAA-MM-DD y ser válida")
+    if (!Number.isInteger(montoNum) || montoNum <= 0) {
+      throw errorValidacion('El monto debe ser un número entero mayor que 0');
+    }
+    if (!cuentaId) {
+      throw errorValidacion('La cuenta es obligatoria');
+    }
+    const fechaFinal = fecha || fechaDeHoy();
+    if (!esFechaValida(fechaFinal)) {
+      throw errorValidacion('La fecha debe tener el formato AAAA-MM-DD y ser válida');
+    }
+    if (fechaFinal > fechaDeHoy()) {
+      throw errorValidacion('La fecha no puede ser futura');
     }
 
     const { data, error } = await supabase
