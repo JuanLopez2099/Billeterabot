@@ -22,7 +22,7 @@ function ResetPassword() {
     }
 
     salirDeRecoveryMode();
-    await signOut(); // Por seguridad, que inicie sesión de nuevo con la nueva contraseña
+    await signOut(); 
   }
 
   return (
