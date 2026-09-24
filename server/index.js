@@ -37,12 +37,12 @@ app.post('/usuarios', async (req, res) => {
 
   const { data, error } = await supabase
     .from('usuarios')
-    .insert([{ id, nombre, email }])
+    .upsert([{ id, nombre, email }])
     .select();
 
   if (error) {
     return res.status(500).json({ error: error.message });
   }
 
-  res.status(201).json({ usuario: data[0] });
+  res.status(200).json({ usuario: data[0] });
 });
