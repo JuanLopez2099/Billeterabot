@@ -10,12 +10,18 @@ export function AuthProvider({ children }) {
 
   async function asegurarUsuarioEnBackend(sessionUser) {
     try {
+      const nombre =
+        sessionUser.user_metadata?.nombre ||
+        sessionUser.user_metadata?.full_name ||
+        sessionUser.user_metadata?.name ||
+        sessionUser.email;
+
       await fetch(`${API_URL}/usuarios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: sessionUser.id,
-          nombre: sessionUser.user_metadata?.nombre || sessionUser.email,
+          nombre,
           email: sessionUser.email,
         }),
       });
