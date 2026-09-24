@@ -132,4 +132,4 @@ async function eliminarIngreso(usuarioId, ingresoId) {
   }
 }
 
-module.exports = { crearIngreso, listarIngresos };
+module.exports = { crearIngreso, listarIngresos, editarIngreso, eliminarIngreso };
