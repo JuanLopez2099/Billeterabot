@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import AuthLayout from '../components/AuthLayout';
+import GoogleIcon from '../components/GoogleIcon';
 
-function Register() {
+function Register({ onIrALogin }) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -9,28 +11,15 @@ function Register() {
   const [cargando, setCargando] = useState(false);
   const [registroExitoso, setRegistroExitoso] = useState(false);
 
-  async function handleGoogleLogin() {
-  await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin,
-    },
-  });
-}
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setCargando(true);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          nombre: nombre,
-        },
-      },
+      options: { data: { nombre } },
     });
 
     if (signUpError) {
@@ -39,57 +28,90 @@ function Register() {
       return;
     }
 
-    console.log('Usuario creado en Supabase Auth (sin confirmar aún):', data.user);
-
     setRegistroExitoso(true);
     setCargando(false);
   }
 
+  async function handleGoogleLogin() {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+  }
+
   if (registroExitoso) {
     return (
-      <div>
-        <h1>¡Revisa tu correo!</h1>
-        <p>Te enviamos un link de confirmación a {email}. Haz clic ahí para activar tu cuenta.</p>
-      </div>
+      <AuthLayout titulo="¡Revisa tu correo!">
+        <p className="auth-subtitle">
+          Te enviamos un link de confirmación a {email}. Haz clic ahí para activar tu cuenta.
+        </p>
+        <button className="auth-button-primary" onClick={onIrALogin}>
+          Volver a iniciar sesión
+        </button>
+      </AuthLayout>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Crear cuenta</h1>
+    <AuthLayout titulo="Crear cuenta" subtitulo="Regístrate para empezar a controlar tus gastos">
+      {error && <p className="auth-error">{error}</p>}
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <div className="auth-field">
+          <label className="auth-label">Nombre</label>
+          <input
+            className="auth-input"
+            type="text"
+            placeholder="Tu nombre"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            required
+          />
+        </div>
 
-      <input
-        type="text"
-        placeholder="Nombre"
-        value={nombre}
-        onChange={(e) => setNombre(e.target.value)}
-        required
-      />
-      <input
-        type="email"
-        placeholder="Correo"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
-      <input
-        type="password"
-        placeholder="Contraseña"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        minLength={6}
-      />
-      <button type="submit" disabled={cargando}>
-        {cargando ? 'Creando...' : 'Registrarme'}
+        <div className="auth-field">
+          <label className="auth-label">Correo</label>
+          <input
+            className="auth-input"
+            type="email"
+            placeholder="tucorreo@ejemplo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="auth-field">
+          <label className="auth-label">Contraseña</label>
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </div>
+
+        <button className="auth-button-primary" type="submit" disabled={cargando}>
+          {cargando ? 'Creando...' : 'Registrarme'}
+        </button>
+      </form>
+
+      <div className="auth-link-row">
+        <button className="auth-link" onClick={onIrALogin}>
+          ¿Ya tienes cuenta? Inicia sesión
+        </button>
+      </div>
+
+      <div className="auth-divider">o</div>
+
+      <button className="auth-button-google" onClick={handleGoogleLogin}>
+        <GoogleIcon />
+        Registrarme con Google
       </button>
-      
-      <button type="button" onClick={handleGoogleLogin}>
-        Continuar con Google
-      </button>
-    </form>
+    </AuthLayout>
   );
 }
 
