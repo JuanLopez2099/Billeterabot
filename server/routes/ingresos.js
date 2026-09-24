@@ -26,4 +26,22 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.put('/:id', async (req, res) => {
+  try {
+    const ingreso = await ingresoService.editarIngreso(req.user.id, req.params.id, req.body || {});
+    res.json({ ingreso });
+  } catch (err) {
+    manejarError(err, res);
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    await ingresoService.eliminarIngreso(req.user.id, req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    manejarError(err, res);
+  }
+});
+
 module.exports = router;
