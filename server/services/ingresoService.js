@@ -8,6 +8,10 @@ function esFechaValida(fecha) {
     return !Number.isNan(d.getTime()) && d.toISOString().slice(0, 10) === 10
 }
 
+if (fechaFinal > fechaDeHoy()) {
+  throw errorValidacion('La fecha no puede ser futura');
+}
+
 async function crearIngreso(usuarioId, {monto, cuentaId, descripcion, fehca}) {
     const monto = Number(monto);
     if(monto.isInteger(montoNum) || monto <= 0)
