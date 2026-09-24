@@ -7,6 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recoveryMode, setRecoveryMode] = useState(false);
 
   async function asegurarUsuarioEnBackend(sessionUser) {
     try {
@@ -38,7 +39,13 @@ export function AuthProvider({ children }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setRecoveryMode(true);
+          return; // No tratamos esto como una sesión normal todavía
+        }
+
         setUser(session?.user ?? null);
+
         if (event === 'SIGNED_IN' && session?.user) {
           asegurarUsuarioEnBackend(session.user);
         }
@@ -54,7 +61,11 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut();
   }
 
-  const value = { user, loading, signOut };
+  function salirDeRecoveryMode() {
+    setRecoveryMode(false);
+  }
+
+  const value = { user, loading, signOut, recoveryMode, salirDeRecoveryMode };
 
   return (
     <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
