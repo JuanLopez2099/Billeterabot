@@ -1,5 +1,7 @@
+
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import AuthLayout from '../components/AuthLayout';
 
 function ForgotPassword({ onVolver }) {
   const [email, setEmail] = useState('');
@@ -29,32 +31,43 @@ function ForgotPassword({ onVolver }) {
 
   if (enviado) {
     return (
-      <div>
-        <h1>Revisa tu correo</h1>
-        <p>Si {email} está registrado, te enviamos un link para restablecer tu contraseña.</p>
-        <button onClick={onVolver}>Volver a iniciar sesión</button>
-      </div>
+      <AuthLayout titulo="Revisa tu correo">
+        <p className="auth-subtitle">
+          Si {email} está registrado, te enviamos un link para restablecer tu contraseña.
+        </p>
+        <button className="auth-button-primary" onClick={onVolver}>
+          Volver a iniciar sesión
+        </button>
+      </AuthLayout>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Recuperar contraseña</h1>
+    <AuthLayout titulo="Recuperar contraseña" subtitulo="Te enviaremos un link a tu correo">
+      {error && <p className="auth-error">{error}</p>}
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <div className="auth-field">
+          <label className="auth-label">Correo</label>
+          <input
+            className="auth-input"
+            type="email"
+            placeholder="tucorreo@ejemplo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
 
-      <input
-        type="email"
-        placeholder="Correo"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
-      <button type="submit" disabled={cargando}>
-        {cargando ? 'Enviando...' : 'Enviar link de recuperación'}
-      </button>
-      <button type="button" onClick={onVolver}>Volver</button>
-    </form>
+        <button className="auth-button-primary" type="submit" disabled={cargando}>
+          {cargando ? 'Enviando...' : 'Enviar link de recuperación'}
+        </button>
+      </form>
+
+      <div className="auth-link-row">
+        <button className="auth-link" onClick={onVolver}>Volver</button>
+      </div>
+    </AuthLayout>
   );
 }
 
