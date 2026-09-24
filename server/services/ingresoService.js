@@ -41,13 +41,12 @@ async function crearIngreso(usuarioId, {monto, cuentaId, descripcion, fehca}) {
     .single();
 
     if (error) {
-    
-    if (error.code === '22P02' || (error.code === '23503' && error.message.includes('cuenta_id'))) {
-      throw errorValidacion('La cuenta indicada no existe');
+      if (error.code === '22P02' || (error.code === '23503' && error.message.includes('cuenta_id'))) {
+        throw errorValidacion('La cuenta indicada no existe');
+      }
+      throw error;
     }
-    throw error;
-  }
-  return data;
+    return data;
 }
 
 async function listarIngresos(usuarioId, orden='desc') {
@@ -63,3 +62,5 @@ async function listarIngresos(usuarioId, orden='desc') {
   if (error) throw error;
   return data;
 }
+
+module.exports = { crearIngreso, listarIngresos };
