@@ -15,3 +15,15 @@ router.post('/', async (req, res) => {
     manejarError(err, res);
   }
 });
+
+router.get('/', async (req, res) => {
+  try {
+    const orden = req.query.orden === 'asc' ? 'asc' : 'desc';
+    const ingresos = await ingresoService.listarIngresos(req.user.id, orden);
+    res.json({ ingresos });
+  } catch (err) {
+    manejarError(err, res);
+  }
+});
+
+module.exports = router;
