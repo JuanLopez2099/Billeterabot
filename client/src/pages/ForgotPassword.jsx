@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import AuthLayout from '../components/AuthLayout';
@@ -43,7 +42,7 @@ function ForgotPassword({ onVolver }) {
   }
 
   return (
-    <AuthLayout titulo="Recuperar contraseña" subtitulo="Te enviaremos un link a tu correo">
+    <AuthLayout>
       {error && <p className="auth-error">{error}</p>}
 
       <form onSubmit={handleSubmit}>
