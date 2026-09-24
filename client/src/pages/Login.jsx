@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import AuthLayout from '../components/AuthLayout';
+import GoogleIcon from '../components/GoogleIcon';
 
-function Login({ onOlvidoPassword }) {
+function Login({ onOlvidoPassword, onIrARegistro }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,7 +22,6 @@ function Login({ onOlvidoPassword }) {
     if (signInError) {
       setError(signInError.message);
       setCargando(false);
-      return;
     }
   }
 
@@ -32,37 +33,58 @@ function Login({ onOlvidoPassword }) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Iniciar sesión</h1>
+    <AuthLayout titulo="Bienvenido" subtitulo="Inicia sesión para ver tus gastos">
+      {error && <p className="auth-error">{error}</p>}
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <div className="auth-field">
+          <label className="auth-label">Correo</label>
+          <input
+            className="auth-input"
+            type="email"
+            placeholder="tucorreo@ejemplo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
 
-      <input
-        type="email"
-        placeholder="Correo"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
-      <input
-        type="password"
-        placeholder="Contraseña"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
-      <button type="submit" disabled={cargando}>
-        {cargando ? 'Ingresando...' : 'Ingresar'}
-      </button>
+        <div className="auth-field">
+          <label className="auth-label">Contraseña</label>
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
 
-      <button type="button" onClick={onOlvidoPassword}>
-        ¿Olvidaste tu contraseña?
-      </button>
+        <button className="auth-button-primary" type="submit" disabled={cargando}>
+          {cargando ? 'Ingresando...' : 'Iniciar sesión'}
+        </button>
+      </form>
 
-      <button type="button" onClick={handleGoogleLogin}>
+      <div className="auth-link-row">
+        <button className="auth-link" onClick={onIrARegistro}>
+          ¿No tienes cuenta? Crear cuenta
+        </button>
+      </div>
+
+      <div className="auth-link-row">
+        <button className="auth-link" onClick={onOlvidoPassword}>
+          ¿Olvidaste tu contraseña?
+        </button>
+      </div>
+
+      <div className="auth-divider">o</div>
+
+      <button className="auth-button-google" onClick={handleGoogleLogin}>
+        <GoogleIcon />
         Continuar con Google
       </button>
-    </form>
+    </AuthLayout>
   );
 }
 
