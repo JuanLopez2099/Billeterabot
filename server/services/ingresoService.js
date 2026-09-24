@@ -43,3 +43,17 @@ async function crearIngreso(usuarioId, {monto, cuentaId, descripcion, fehca}) {
   }
   return data;
 }
+
+async function listarIngresos(usuarioId, orden='desc') {
+    const ascendente = orden === 'asc';
+
+    const { data, error } = await supabase
+    .from('ingresos')
+    .select('id, monto, descripcion, fecha, creado_en, cuenta:cuentas(id, nombre)')
+    .eq('usuario_id', usuarioId)
+    .order('fecha', { ascending: ascendente })
+    .order('creado_en', { ascending: ascendente });
+
+  if (error) throw error;
+  return data;
+}
