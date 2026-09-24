@@ -14,4 +14,4 @@ function manejarError(err, res) {
 
 
 
-module.exports = {errorValidacion, manejoError};
+module.exports = {errorValidacion, manejarError}; 
