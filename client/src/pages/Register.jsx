@@ -31,8 +31,6 @@ function Register() {
     }
 
     console.log('Usuario creado en Supabase Auth (sin confirmar aún):', data.user);
-    // En el próximo paso, aquí llamaremos a Express para
-    // guardar nombre + email en la tabla `usuarios`.
 
     setRegistroExitoso(true);
     setCargando(false);
