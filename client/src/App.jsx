@@ -2,12 +2,19 @@ import { useState } from 'react';
 import { useAuth } from './context/useAuth';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
-  const { user, loading, signOut } = useAuth();
-  const [mostrarLogin, setMostrarLogin] = useState(false);
+  const { user, loading, signOut, recoveryMode } = useAuth();
+  const [vista, setVista] = useState('login'); 
 
   if (loading) return <p>Cargando...</p>;
+
+
+  if (recoveryMode) {
+    return <ResetPassword />;
+  }
 
   if (user) {
     return (
@@ -19,11 +26,19 @@ function App() {
     );
   }
 
+  if (vista === 'forgot') {
+    return <ForgotPassword onVolver={() => setVista('login')} />;
+  }
+
   return (
     <div>
-      {mostrarLogin ? <Login /> : <Register />}
-      <button onClick={() => setMostrarLogin(!mostrarLogin)}>
-        {mostrarLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
+      {vista === 'login' ? (
+        <Login onOlvidoPassword={() => setVista('forgot')} />
+      ) : (
+        <Register />
+      )}
+      <button onClick={() => setVista(vista === 'login' ? 'register' : 'login')}>
+        {vista === 'login' ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
       </button>
     </div>
   );
