@@ -7,10 +7,9 @@ import ResetPassword from './pages/ResetPassword';
 
 function App() {
   const { user, loading, signOut, recoveryMode } = useAuth();
-  const [vista, setVista] = useState('login'); 
+  const [vista, setVista] = useState('login');
 
   if (loading) return <p>Cargando...</p>;
-
 
   if (recoveryMode) {
     return <ResetPassword />;
@@ -30,17 +29,15 @@ function App() {
     return <ForgotPassword onVolver={() => setVista('login')} />;
   }
 
+  if (vista === 'register') {
+    return <Register onIrALogin={() => setVista('login')} />;
+  }
+
   return (
-    <div>
-      {vista === 'login' ? (
-        <Login onOlvidoPassword={() => setVista('forgot')} />
-      ) : (
-        <Register />
-      )}
-      <button onClick={() => setVista(vista === 'login' ? 'register' : 'login')}>
-        {vista === 'login' ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
-      </button>
-    </div>
+    <Login
+      onOlvidoPassword={() => setVista('forgot')}
+      onIrARegistro={() => setVista('register')}
+    />
   );
 }
 
