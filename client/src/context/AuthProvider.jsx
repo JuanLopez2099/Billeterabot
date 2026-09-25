@@ -4,6 +4,17 @@ import { AuthContext } from './AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+
+function obtenerNombre(u) {
+  if (!u) return '';
+  return (
+    u.user_metadata?.nombre ||
+    u.user_metadata?.full_name ||
+    u.user_metadata?.name ||
+    u.email
+  );
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -11,12 +22,7 @@ export function AuthProvider({ children }) {
 
   async function asegurarUsuarioEnBackend(session) {
   try {
-    const sessionUser = session.user;
-    const nombre =
-      sessionUser.user_metadata?.nombre ||
-      sessionUser.user_metadata?.full_name ||
-      sessionUser.user_metadata?.name ||
-      sessionUser.email;
+    const nombre = obtenerNombre(session.user);
 
     await fetch(`${API_URL}/usuarios`, {
       method: 'POST',
@@ -65,7 +71,7 @@ export function AuthProvider({ children }) {
     setRecoveryMode(false);
   }
 
-  const value = { user, loading, signOut, recoveryMode, salirDeRecoveryMode };
+  const value = { user, loading, signOut, recoveryMode, salirDeRecoveryMode, nombre: obtenerNombre(user) };
 
   return (
     <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

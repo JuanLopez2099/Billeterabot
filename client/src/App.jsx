@@ -9,7 +9,7 @@ import Topbar from './components/Topbar';
 import './styles/topbar.css';
 
 function App() {
-  const { user, loading, signOut, recoveryMode } = useAuth();
+  const { user, loading, signOut, recoveryMode, nombre } = useAuth();
   const [vista, setVista] = useState('login');
 
   if (loading) return <p>Cargando...</p>;
@@ -21,7 +21,7 @@ function App() {
   if (user) {
     return (
       <div>
-        <Topbar nombre={user.email} onCerrarSesion={signOut} />
+        <Topbar nombre={nombre} onCerrarSesion={signOut} />
         <Ingresos />
       </div>
     );
