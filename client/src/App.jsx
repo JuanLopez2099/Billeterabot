@@ -4,6 +4,7 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Ingresos from './pages/Ingresos';
 
 function App() {
   const { user, loading, signOut, recoveryMode } = useAuth();
@@ -18,9 +19,10 @@ function App() {
   if (user) {
     return (
       <div>
-        <h1>¡Ya iniciaste sesión!</h1>
-        <p>Email: {user.email}</p>
-        <button onClick={signOut}>Cerrar sesión</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 16 }}>
+          <button onClick={signOut}>Cerrar sesión</button>
+        </div>
+        <Ingresos />
       </div>
     );
   }
