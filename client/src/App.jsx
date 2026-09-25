@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Ingresos from './pages/Ingresos';
+import Topbar from './components/Topbar';
+import './styles/topbar.css';
 
 function App() {
   const { user, loading, signOut, recoveryMode } = useAuth();
@@ -19,9 +21,7 @@ function App() {
   if (user) {
     return (
       <div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 16 }}>
-          <button onClick={signOut}>Cerrar sesión</button>
-        </div>
+        <Topbar nombre={user.email} onCerrarSesion={signOut} />
         <Ingresos />
       </div>
     );
