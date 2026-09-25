@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { listarIngresos, crearIngreso, editarIngreso,  eliminarIngreso, listarCuentas } from '../services/ingresos';
+import {
+  listarIngresos,
+  crearIngreso,
+  editarIngreso,
+  eliminarIngreso,
+  listarCuentas,
+} from '../services/ingresos';
 import '../styles/ingresos.css';
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
@@ -23,7 +29,8 @@ export default function Ingresos() {
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState(hoy);
   const [guardando, setGuardando] = useState(false);
-  const [editandoId, setEditandoId] = useState(null); // null = creando uno nuevo
+  const [editandoId, setEditandoId] = useState(null);
+  const [idAEliminar, setIdAEliminar] = useState(null);
 
   async function cargarDatos() {
     try {
@@ -101,12 +108,17 @@ export default function Ingresos() {
     }
   }
 
-  async function manejarEliminar(id) {
-    if (!confirm('¿Eliminar este ingreso?')) return;
+  function pedirEliminar(id) {
+    setIdAEliminar(id);
+  }
+
+  async function confirmarEliminar() {
+    const id = idAEliminar;
+    setIdAEliminar(null);
     try {
       await eliminarIngreso(id);
+      setIngresos((actuales) => actuales.filter((i) => i.id !== id));
       if (editandoId === id) limpiarFormulario();
-      await cargarDatos();
     } catch (err) {
       setError(err.message);
     }
@@ -201,13 +213,26 @@ export default function Ingresos() {
                 <span className="movimiento-monto">+ {formatoPesos(ing.monto)}</span>
                 <div className="movimiento-acciones">
                   <button className="icon-btn" onClick={() => comenzarEdicion(ing)} aria-label="Editar">✏️</button>
-                  <button className="icon-btn" onClick={() => manejarEliminar(ing.id)} aria-label="Eliminar">🗑️</button>
+                  <button className="icon-btn" onClick={() => pedirEliminar(ing.id)} aria-label="Eliminar">🗑️</button>
                 </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {idAEliminar && (
+        <div className="modal-overlay" onClick={() => setIdAEliminar(null)}>
+          <div className="modal-tarjeta" onClick={(e) => e.stopPropagation()}>
+            <h3>Eliminar ingreso</h3>
+            <p>¿Seguro que quieres eliminarlo? Esta acción no se puede deshacer.</p>
+            <div className="modal-acciones">
+              <button className="boton boton-secundario" onClick={() => setIdAEliminar(null)}>Cancelar</button>
+              <button className="boton boton-peligro" onClick={confirmarEliminar}>Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
