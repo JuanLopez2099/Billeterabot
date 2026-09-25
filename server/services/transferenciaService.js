@@ -147,4 +147,4 @@ async function eliminarTransferencia(usuarioId, transferenciaId) {
   }
 }
 
-module.exports = { crearTransferencia, listarTransferencias };
+module.exports = { crearTransferencia, listarTransferencias, editarTransferencia, eliminarTransferencia };
