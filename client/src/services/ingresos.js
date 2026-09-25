@@ -53,3 +53,18 @@ export async function listarCuentas() {
   if (!response.ok) throw new Error(data.error || 'Error al listar cuentas');
   return data.cuentas;
 }
+
+export async function editarIngreso(id, ingreso) {
+  const token = await obtenerToken();
+  const response = await fetch(`${API_URL}/ingresos/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(ingreso),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Error al editar el ingreso');
+  return data.ingreso;
+}
