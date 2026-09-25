@@ -1,21 +1,21 @@
-.ingresos-page {
+.pagina {
   max-width: 720px;
   margin: 0 auto;
   padding: 40px 20px 64px;
 }
 
-.ingresos-header {
+.pagina-header {
   margin-bottom: 24px;
 }
 
-.ingresos-header h1 {
+.pagina-header h1 {
   margin: 0 0 4px;
   font-size: 26px;
   font-weight: 700;
   color: var(--color-primary-dark);
 }
 
-.ingresos-header p {
+.pagina-header p {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 15px;
@@ -36,17 +36,17 @@
   font-weight: 600;
 }
 
-.formulario-ingreso {
+.formulario-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
 
-.formulario-ingreso .campo-ancho {
+.formulario-grid .campo-ancho {
   grid-column: 1 / -1;
 }
 
-.formulario-ingreso label {
+.formulario-grid label {
   display: block;
   font-size: 13px;
   font-weight: 500;
@@ -54,8 +54,8 @@
   margin-bottom: 6px;
 }
 
-.formulario-ingreso input,
-.formulario-ingreso select {
+.formulario-grid input,
+.formulario-grid select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--color-border);
@@ -66,8 +66,8 @@
   color: var(--color-text);
 }
 
-.formulario-ingreso input:focus,
-.formulario-ingreso select:focus {
+.formulario-grid input:focus,
+.formulario-grid select:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-soft);
@@ -142,6 +142,11 @@
   color: var(--color-primary);
 }
 
+.movimiento-icono--transferencia {
+  background: #e3ebf5;
+  color: #35618c;
+}
+
 .movimiento-info {
   flex: 1;
   min-width: 0;
@@ -177,6 +182,10 @@
   color: var(--color-positive);
 }
 
+.movimiento-monto--neutral {
+  color: #35618c;
+}
+
 .movimiento-acciones {
   display: flex;
   gap: 2px;
@@ -199,10 +208,6 @@
   text-align: center;
   color: var(--color-text-muted);
   padding: 32px 0;
-}
-
-@media (max-width: 560px) {
-  .formulario-ingreso { grid-template-columns: 1fr; }
 }
 
 .modal-overlay {
@@ -247,3 +252,7 @@
   color: #fff;
 }
 .boton-peligro:hover { background: #96332c; }
+
+@media (max-width: 560px) {
+  .formulario-grid { grid-template-columns: 1fr; }
+}
