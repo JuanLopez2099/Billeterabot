@@ -5,6 +5,7 @@ const supabase = require('./config/supabaseClient');
 const requireAuth = require('./middleware/auth');
 const ingresosRoutes = require('./routes/ingresos');
 const cuentasRoutes = require('./routes/cuentas');
+const transferenciasRoutes = require('./routes/transferencias');
 
 const app = express();
 app.use(cors());
@@ -39,6 +40,7 @@ app.post('/usuarios', requireAuth, async (req, res) => {
 
 app.use('/ingresos', ingresosRoutes);
 app.use('/cuentas', cuentasRoutes);
+app.use('/transferencias', transferenciasRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
