@@ -7,10 +7,13 @@ import ResetPassword from './pages/ResetPassword';
 import Ingresos from './pages/Ingresos';
 import Topbar from './components/Topbar';
 import './styles/topbar.css';
+import NavTabs from './components/NavTabs';
+import Transferencias from './pages/Transferencias';
 
 function App() {
   const { user, loading, signOut, recoveryMode, nombre } = useAuth();
   const [vista, setVista] = useState('login');
+  const [pantalla, setPantalla] = useState('ingresos');
 
   if (loading) return <p>Cargando...</p>;
 
@@ -22,7 +25,8 @@ function App() {
     return (
       <div>
         <Topbar nombre={nombre} onCerrarSesion={signOut} />
-        <Ingresos />
+        <NavTabs pantalla={pantalla} onCambiar={setPantalla} />
+        {pantalla === 'ingresos' ? <Ingresos /> : <Transferencias />}
       </div>
     );
   }
