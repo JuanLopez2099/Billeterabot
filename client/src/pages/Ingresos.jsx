@@ -6,7 +6,7 @@ import {
   eliminarIngreso,
   listarCuentas,
 } from '../services/ingresos';
-import '../styles/ingresos.css';
+import '../styles/movimientos.css';
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
@@ -125,15 +125,15 @@ export default function Ingresos() {
   }
 
   return (
-    <div className="ingresos-page">
-      <div className="ingresos-header">
+    <div className="pagina">
+      <div className="pagina-header">
         <h1>Ingresos</h1>
         <p>Registra y revisa el dinero que has recibido</p>
       </div>
 
       <div className="tarjeta">
         <h2>{editandoId ? 'Editar ingreso' : 'Nuevo ingreso'}</h2>
-        <form onSubmit={manejarSubmit} className="formulario-ingreso">
+        <form onSubmit={manejarSubmit} className="formulario-grid">
           <div>
             <label htmlFor="monto">Monto</label>
             <input
