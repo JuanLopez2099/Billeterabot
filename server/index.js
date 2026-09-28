@@ -6,6 +6,8 @@ const requireAuth = require('./middleware/auth');
 const ingresosRoutes = require('./routes/ingresos');
 const cuentasRoutes = require('./routes/cuentas');
 const transferenciasRoutes = require('./routes/transferencias');
+const categoriasRoutes = require('./routes/categorias');
+const categoriaService = require('./services/categoriaService');
 
 const app = express();
 app.use(cors());
@@ -35,12 +37,25 @@ app.post('/usuarios', requireAuth, async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  try {
+    await categoriaService.sembrarPredefinidasSiNoTiene(id);
+  } catch (err) {
+    console.error('No se pudieron sembrar las categorías predefinidas:', err);
+  }
+
+  res.status(200).json({ usuario: data[0] });
+
   res.status(200).json({ usuario: data[0] });
 });
 
 app.use('/ingresos', ingresosRoutes);
 app.use('/cuentas', cuentasRoutes);
 app.use('/transferencias', transferenciasRoutes);
+app.use('/categorias', categoriasRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
