@@ -1,8 +1,8 @@
 const opciones = [
   { id: 'ingresos', etiqueta: 'Ingresos' },
   { id: 'transferencias', etiqueta: 'Transferencias' },
+  { id: 'categorias', etiqueta: 'Categorías' },
 ];
-
 
 export default function NavTabs({ pantalla, onCambiar }) {
   return (
