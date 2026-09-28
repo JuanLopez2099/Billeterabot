@@ -46,7 +46,6 @@ app.post('/usuarios', requireAuth, async (req, res) => {
 
   res.status(200).json({ usuario: data[0] });
 
-  res.status(200).json({ usuario: data[0] });
 });
 
 app.use('/ingresos', ingresosRoutes);
