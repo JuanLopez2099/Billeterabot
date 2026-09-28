@@ -28,15 +28,16 @@ function errorConEstado(mensaje, status) {
   return err;
 }
 
-async function sembrarPredefinidasSiNoTiene(usuarioId) {
-  const { count, error } = await supabase
-    .from('categorias')
-    .select('id', { count: 'exact', head: true })
-    .eq('usuario_id', usuarioId);
+async function sembrarPredefinidasUnaVez(usuarioId) {
+  const { data: usuario, error: errorUsuario } = await supabase
+    .from('usuarios')
+    .select('categorias_sembradas')
+    .eq('id', usuarioId)
+    .single();
 
-  if (error) throw error;
-  if (count > 0) return false;
-
+  if (errorUsuario) throw errorUsuario;
+  if (usuario.categorias_sembradas) return false;
+  
   const filas = CATEGORIAS_PREDEFINIDAS.map((nombre) => ({
     usuario_id: usuarioId,
     nombre,
@@ -48,6 +49,14 @@ async function sembrarPredefinidasSiNoTiene(usuarioId) {
     .upsert(filas, { onConflict: 'usuario_id,nombre', ignoreDuplicates: true });
 
   if (errorInsert) throw errorInsert;
+
+  const { error: errorMarcar } = await supabase
+    .from('usuarios')
+    .update({ categorias_sembradas: true })
+    .eq('id', usuarioId);
+
+  if (errorMarcar) throw errorMarcar;
+
   return true;
 }
 
