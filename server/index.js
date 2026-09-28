@@ -8,6 +8,7 @@ const cuentasRoutes = require('./routes/cuentas');
 const transferenciasRoutes = require('./routes/transferencias');
 const categoriasRoutes = require('./routes/categorias');
 const categoriaService = require('./services/categoriaService');
+const gastosRoutes = require('./routes/gastos');
 
 const app = express();
 app.use(cors());
@@ -52,6 +53,7 @@ app.use('/ingresos', ingresosRoutes);
 app.use('/cuentas', cuentasRoutes);
 app.use('/transferencias', transferenciasRoutes);
 app.use('/categorias', categoriasRoutes);
+app.use('/gastos', gastosRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
