@@ -9,9 +9,11 @@ import Topbar from './components/Topbar';
 import './styles/topbar.css';
 import NavTabs from './components/NavTabs';
 import Transferencias from './pages/Transferencias';
+import Categorias from './pages/Categorias';
+import { CategoriasProvider } from './context/CategoriasProvider';
 
 function App() {
-  const { user, loading, signOut, recoveryMode, nombre } = useAuth();
+  const { user, loading, signOut, recoveryMode, nombre, sincronizado } = useAuth();
   const [vista, setVista] = useState('login');
   const [pantalla, setPantalla] = useState('ingresos');
 
@@ -21,13 +23,19 @@ function App() {
     return <ResetPassword />;
   }
 
+  if (user && !sincronizado) return <p>Cargando...</p>;
+
   if (user) {
     return (
-      <div>
-        <Topbar nombre={nombre} onCerrarSesion={signOut} />
-        <NavTabs pantalla={pantalla} onCambiar={setPantalla} />
-        {pantalla === 'ingresos' ? <Ingresos /> : <Transferencias />}
-      </div>
+      <CategoriasProvider>
+        <div>
+          <Topbar nombre={nombre} onCerrarSesion={signOut} />
+          <NavTabs pantalla={pantalla} onCambiar={setPantalla} />
+          {pantalla === 'ingresos' && <Ingresos />}
+          {pantalla === 'transferencias' && <Transferencias />}
+          {pantalla === 'categorias' && <Categorias />}
+        </div>
+      </CategoriasProvider>
     );
   }
 
