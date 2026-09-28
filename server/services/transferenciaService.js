@@ -1,15 +1,8 @@
 const supabase = require('../config/supabaseClient');
 const { errorValidacion } = require('../utils/errores');
+const { fechaDeHoy, esFechaValida } = require('../utils/fechas');
 
-function fechaDeHoy() {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
-}
 
-function esFechaValida(fecha) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false;
-  const d = new Date(fecha + 'T00:00:00Z');
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === fecha;
-}
 async function crearTransferencia(usuarioId, { monto, cuentaOrigenId, cuentaDestinoId, fecha }) {
   const montoNum = Number(monto);
   if (!Number.isInteger(montoNum) || montoNum <= 0) {
