@@ -117,12 +117,6 @@ async function eliminarCategoria(usuarioId, categoriaId) {
     .select();
 
   if (error) {
-    if (error.code === '23503') {
-      throw errorConEstado(
-        'No puedes eliminar una categoría que tiene gastos asociados. Reasigna o elimina esos gastos primero.',
-        409
-      );
-    }
     if (error.code === '22P02') {
       throw errorConEstado('Categoría no encontrada', 404);
     }
