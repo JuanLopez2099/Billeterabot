@@ -37,7 +37,7 @@ async function sembrarPredefinidasUnaVez(usuarioId) {
 
   if (errorUsuario) throw errorUsuario;
   if (usuario.categorias_sembradas) return false;
-  
+
   const filas = CATEGORIAS_PREDEFINIDAS.map((nombre) => ({
     usuario_id: usuarioId,
     nombre,
@@ -138,7 +138,7 @@ async function eliminarCategoria(usuarioId, categoriaId) {
 }
 
 module.exports = {
-  sembrarPredefinidasSiNoTiene,
+  sembrarPredefinidasUnaVez,
   listarCategorias,
   crearCategoria,
   editarCategoria,
