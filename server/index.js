@@ -39,7 +39,7 @@ app.post('/usuarios', requireAuth, async (req, res) => {
 
 
   try {
-    await categoriaService.sembrarPredefinidasSiNoTiene(id);
+    await categoriaService.sembrarPredefinidasUnaVez(id);
   } catch (err) {
     console.error('No se pudieron sembrar las categorías predefinidas:', err);
   }
