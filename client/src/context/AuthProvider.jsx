@@ -73,7 +73,7 @@ export function AuthProvider({ children }) {
     setRecoveryMode(false);
   }
 
-  // true solo cuando el backend ya terminó de registrar/sembrar a ESTE usuario
+  
   const sincronizado = Boolean(user) && idSincronizado === user.id;
 
   const value = {
