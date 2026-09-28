@@ -37,9 +37,6 @@ app.post('/usuarios', requireAuth, async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 
-  if (error) {
-    return res.status(500).json({ error: error.message });
-  }
 
   try {
     await categoriaService.sembrarPredefinidasSiNoTiene(id);
