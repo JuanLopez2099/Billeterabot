@@ -4,18 +4,18 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import Ingresos from './pages/Ingresos';
 import Topbar from './components/Topbar';
 import './styles/topbar.css';
-import NavTabs from './components/NavTabs';
 import Transferencias from './pages/Transferencias';
-import Categorias from './pages/Categorias';
 import { CategoriasProvider } from './context/CategoriasProvider';
+import Sidebar from './components/Sidebar';
+import General from './pages/General';
+import './styles/dashboard.css';
 
 function App() {
   const { user, loading, signOut, recoveryMode, nombre, sincronizado } = useAuth();
   const [vista, setVista] = useState('login');
-  const [pantalla, setPantalla] = useState('ingresos');
+  const [pantalla, setPantalla] = useState('general');
 
   if (loading) return <p>Cargando...</p>;
 
@@ -30,10 +30,14 @@ function App() {
       <CategoriasProvider>
         <div>
           <Topbar nombre={nombre} onCerrarSesion={signOut} />
-          <NavTabs pantalla={pantalla} onCambiar={setPantalla} />
-          {pantalla === 'ingresos' && <Ingresos />}
-          {pantalla === 'transferencias' && <Transferencias />}
-          {pantalla === 'categorias' && <Categorias />}
+          <div className="layout-con-sidebar">
+            <Sidebar pantalla={pantalla} onCambiar={setPantalla} />
+            <div style={{ flex: 1 }}>
+              {pantalla === 'general' && <General />}
+              {pantalla === 'transferencias' && <Transferencias />}
+              {pantalla.startsWith('categoria:') && <p style={{ padding: 24 }}>Vista de gastos por categoría (siguiente paso)</p>}
+            </div>
+          </div>
         </div>
       </CategoriasProvider>
     );
