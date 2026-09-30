@@ -11,6 +11,7 @@ import { CategoriasProvider } from './context/CategoriasProvider';
 import Sidebar from './components/Sidebar';
 import General from './pages/General';
 import './styles/dashboard.css';
+import GastosCategoria from './pages/GastosCategoria';
 
 function App() {
   const { user, loading, signOut, recoveryMode, nombre, sincronizado } = useAuth();
@@ -36,6 +37,9 @@ function App() {
               {pantalla === 'general' && <General />}
               {pantalla === 'transferencias' && <Transferencias />}
               {pantalla.startsWith('categoria:') && <p style={{ padding: 24 }}>Vista de gastos por categoría (siguiente paso)</p>}
+              {pantalla.startsWith('categoria:') && (
+                <GastosCategoria key={pantalla} categoriaId={pantalla.split(':')[1]} />
+              )}
             </div>
           </div>
         </div>

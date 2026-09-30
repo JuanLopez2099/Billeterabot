@@ -282,3 +282,13 @@
   border-color: var(--color-primary-soft);
   color: var(--color-primary-dark);
 }
+
+.mensaje-aviso {
+  background: #fdf3da;
+  color: #8a6d1d;
+  border: 1px solid #f0dca0;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
