@@ -16,9 +16,27 @@ function formatoPesos(numero) {
   }).format(numero);
 }
 
+const EJEMPLOS_DESCRIPCION = {
+  Alimentación: 'Ej. Mercado de la semana',
+  Transporte: 'Ej. Pasajes o gasolina',
+  Servicios: 'Ej. Factura de internet',
+  Ocio: 'Ej. Cine con amigos',
+  'Cuidado personal': 'Ej. Corte de cabello',
+};
+
+const EJEMPLO_GENERICO = 'Ej. Describe brevemente el gasto';
+
 export default function GastosCategoria({ categoriaId }) {
   const { categorias, buscarPorNombre, crear: crearCategoria } = useCategorias();
   const categoriaActual = categorias.find((c) => c.id === categoriaId);
+
+  const categoriaSeleccionada = categorias.find(
+    (categoria) => categoria.id === categoriaSeleccion
+  );
+
+  const ejemploDescripcion = categoriaSeleccionada?.es_predefinida
+    ? EJEMPLOS_DESCRIPCION[categoriaSeleccionada.nombre] || EJEMPLO_GENERICO
+    : EJEMPLO_GENERICO;
 
   const [gastos, setGastos] = useState([]);
   const [cuentas, setCuentas] = useState([]);
@@ -205,7 +223,7 @@ useEffect(() => {
             <input
               id="descripcion"
               type="text"
-              placeholder="Ej. Cine con amigos"
+              placeholder={ejemploDescripcion}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
             />
