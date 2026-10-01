@@ -36,7 +36,6 @@ function App() {
             <div style={{ flex: 1 }}>
               {pantalla === 'general' && <General />}
               {pantalla === 'transferencias' && <Transferencias />}
-              {pantalla.startsWith('categoria:') && <p style={{ padding: 24 }}>Vista de gastos por categoría (siguiente paso)</p>}
               {pantalla.startsWith('categoria:') && (
                 <GastosCategoria key={pantalla} categoriaId={pantalla.split(':')[1]} />
               )}
