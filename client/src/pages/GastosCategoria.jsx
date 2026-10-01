@@ -26,7 +26,7 @@ const EJEMPLOS_DESCRIPCION = {
 
 const EJEMPLO_GENERICO = 'Ej. Describe brevemente el gasto';
 
-export default function GastosCategoria({ categoriaId }) {
+export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
   const { categorias, buscarPorNombre, crear: crearCategoria } = useCategorias();
   const categoriaActual = categorias.find((c) => c.id === categoriaId);
 
@@ -112,21 +112,23 @@ useEffect(() => {
 
   async function resolverCategoria() {
     if (categoriaSeleccion !== OPCION_NUEVA) {
-      return { id: categoriaSeleccion, mensaje: '' };
-    }
-    const existente = buscarPorNombre(nombreNuevaCategoria);
-    if (existente) {
-      return { id: existente.id, mensaje: `Ya tenías «${existente.nombre}», se usó esa en vez de crear una nueva` };
-    }
-    const nueva = await crearCategoria(nombreNuevaCategoria);
-    return { id: nueva.id, mensaje: '' };
+      return categoriaSeleccion;
+    }manejarSubmit
+
+  const existente = buscarPorNombre(nombreNuevaCategoria);
+  if (existente) {
+    return existente.id;
   }
+
+  const nueva = await crearCategoria(nombreNuevaCategoria);
+  return nueva.id;
+}
 
   async function manejarSubmit(e) {
     e.preventDefault();
     setGuardando(true);
     try {
-      const { id: categoriaFinalId, mensaje } = await resolverCategoria();
+      const categoriaFinalId = await resolverCategoria();
       const datos = { monto, cuentaId, categoriaId: categoriaFinalId, descripcion, fecha };
 
       if (editandoId) {
@@ -135,9 +137,14 @@ useEffect(() => {
         await crearGasto(datos);
       }
 
-      setAviso(mensaje || (categoriaFinalId !== categoriaId ? 'Gasto guardado en otra categoría' : ''));
+      setAviso('');
       limpiarFormulario();
-      await cargarDatos();
+
+      if (categoriaFinalId !== categoriaId) {
+        onCambiarPantalla(`categoria:${categoriaFinalId}`);
+      } else {
+        await cargarDatos();
+      }
     } catch (err) {
       setError(err.message);
     } finally {
