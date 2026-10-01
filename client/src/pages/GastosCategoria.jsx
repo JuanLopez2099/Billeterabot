@@ -30,13 +30,7 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
   const { categorias, buscarPorNombre, crear: crearCategoria } = useCategorias();
   const categoriaActual = categorias.find((c) => c.id === categoriaId);
 
-  const categoriaSeleccionada = categorias.find(
-    (categoria) => categoria.id === categoriaSeleccion
-  );
-
-  const ejemploDescripcion = categoriaSeleccionada?.es_predefinida
-    ? EJEMPLOS_DESCRIPCION[categoriaSeleccionada.nombre] || EJEMPLO_GENERICO
-    : EJEMPLO_GENERICO;
+  
 
   const [gastos, setGastos] = useState([]);
   const [cuentas, setCuentas] = useState([]);
@@ -53,6 +47,14 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [idAEliminar, setIdAEliminar] = useState(null);
+
+  const categoriaSeleccionada = categorias.find(
+    (categoria) => categoria.id === categoriaSeleccion
+  );
+
+  const ejemploDescripcion = categoriaSeleccionada?.es_predefinida
+    ? EJEMPLOS_DESCRIPCION[categoriaSeleccionada.nombre] || EJEMPLO_GENERICO
+    : EJEMPLO_GENERICO;
 
   async function cargarDatos() {
     try {
@@ -113,16 +115,16 @@ useEffect(() => {
   async function resolverCategoria() {
     if (categoriaSeleccion !== OPCION_NUEVA) {
       return categoriaSeleccion;
-    }manejarSubmit
+    }
 
-  const existente = buscarPorNombre(nombreNuevaCategoria);
-  if (existente) {
+    const existente = buscarPorNombre(nombreNuevaCategoria);
+    if (existente) {
     return existente.id;
-  }
+    }
 
-  const nueva = await crearCategoria(nombreNuevaCategoria);
-  return nueva.id;
-}
+    const nueva = await crearCategoria(nombreNuevaCategoria);
+    return nueva.id;
+  }
 
   async function manejarSubmit(e) {
     e.preventDefault();
