@@ -154,8 +154,8 @@ export default function Sidebar({ pantalla, onCambiar }) {
             onChange={(e) => setNombreNueva(e.target.value)}
             maxLength={40}
           />
-          <button type="submit" className="icon-btn" aria-label="Guardar">✔️</button>
-          <button type="button" className="icon-btn" onClick={() => setCreandoNueva(false)} aria-label="Cancelar">✕</button>
+          <button type="submit" className="icon-btn" aria-label="Guardar"> <img src={iconoGuardar} alt="" className="sidebar-icon-accion" /></button>
+          <button type="button" className="icon-btn" onClick={() => setCreandoNueva(false)} aria-label="Cancelar"> <img src={iconoCancelar} alt="" className="sidebar-icon-accion" /> </button>
         </form>
       ) : (
         <button className="sidebar-item sidebar-item--nueva" onClick={() => setCreandoNueva(true)}>

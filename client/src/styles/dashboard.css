@@ -31,6 +31,10 @@
   font-family: inherit;
 }
 
+.sidebar > button.sidebar-item:not(.sidebar-item--nueva) {
+  justify-content: flex-start;
+}
+
 .sidebar-item:hover { background: var(--color-bg); }
 
 .sidebar-item--activo {
@@ -171,7 +175,6 @@
   height: 18px;
   object-fit: contain;
   flex-shrink: 0;
-  margin-right: 8px;
 }
 
 .sidebar-icon-accion {
