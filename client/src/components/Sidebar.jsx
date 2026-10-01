@@ -89,20 +89,48 @@ export default function Sidebar({ pantalla, onCambiar }) {
         ) : (
           <div
             key={c.id}
-            className={`sidebar-item sidebar-item--categoria ${pantalla === `categoria:${c.id}` ? 'sidebar-item--activo' : ''}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => onCambiar(`categoria:${c.id}`)}
+            onKeyDown={(e) => {
+              if (e.target !== e.currentTarget) return;
+
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onCambiar(`categoria:${c.id}`);
+              }
+            }}
+            className={`sidebar-item sidebar-item--categoria ${
+              pantalla === `categoria:${c.id}` ? 'sidebar-item--activo' : ''
+            }`}
           >
-            <span className="sidebar-item-texto" onClick={() => onCambiar(`categoria:${c.id}`)}>
+            <span className="sidebar-item-texto">
               🏷️ {c.nombre}
             </span>
+
             <span className="sidebar-item-acciones">
               <button
                 className="icon-btn"
                 aria-label="Editar categoría"
-                onClick={() => { setEditandoId(c.id); setNombreEditado(c.nombre); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditandoId(c.id);
+                  setNombreEditado(c.nombre);
+                }}
               >
                 ✏️
               </button>
-              <button className="icon-btn" aria-label="Eliminar categoría" onClick={() => manejarEliminar(c.id)}>🗑️</button>
+
+              <button
+                className="icon-btn"
+                aria-label="Eliminar categoría"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  manejarEliminar(c.id);
+                }}
+              >
+                🗑️
+              </button>
             </span>
           </div>
         )
