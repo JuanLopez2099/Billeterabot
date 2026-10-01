@@ -5,6 +5,7 @@ import { listarHistorial } from '../services/historial';
 import '../styles/movimientos.css';
 import '../styles/dashboard.css';
 import EtiquetaCuenta, { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
+import { useCategorias } from '../context/useCategorias';
 
 function formatoPesos(numero) {
   return new Intl.NumberFormat('es-CO', {
@@ -41,6 +42,7 @@ function montoConSigno(m) {
 }
 
 export default function General() {
+  const { categorias } = useCategorias();
   const [resumen, setResumen] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -69,7 +71,7 @@ export default function General() {
 
     cargar();
     return () => { activo = false; };
-  }, []);
+  }, [categorias]);
 
   if (cargando) return <div className="pagina"><p className="estado-cargando">Cargando...</p></div>;
   if (error) return <div className="pagina"><p className="mensaje-error">{error}</p></div>;
@@ -112,7 +114,9 @@ export default function General() {
                       <div className="movimiento-descripcion">{descripcionMovimiento(m)}</div>
                       <div className="movimiento-meta">
                         {m.tipo !== 'transferencia' && <EtiquetaCuenta nombre={m.cuenta?.nombre} />}
-                        {m.categoria && <span className="pill">{m.categoria.nombre}</span>}
+                        {m.tipo === 'gasto' && (
+                          <span className="pill">{m.categoria?.nombre || 'Sin categoría'}</span>
+                        )}
                         <span>{m.fecha}</span>
                       </div>
                     </div>

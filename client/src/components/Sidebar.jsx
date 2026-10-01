@@ -9,6 +9,7 @@ export default function Sidebar({ pantalla, onCambiar }) {
   const [editandoId, setEditandoId] = useState(null);
   const [nombreEditado, setNombreEditado] = useState('');
   const [error, setError] = useState('');
+  const [idAEliminar, setIdAEliminar] = useState(null);
 
   async function manejarCrear(e) {
     e.preventDefault();
@@ -33,8 +34,13 @@ export default function Sidebar({ pantalla, onCambiar }) {
     }
   }
 
-  async function manejarEliminar(id) {
-    if (!confirm('¿Eliminar esta categoría? Sus gastos quedarán sin categoría.')) return;
+  function manejarEliminar(id) {
+    setIdAEliminar(id);
+  }
+
+  async function confirmarEliminar() {
+    const id = idAEliminar;
+    setIdAEliminar(null);
     try {
       await eliminar(id);
       if (pantalla === `categoria:${id}`) onCambiar('general');
@@ -42,6 +48,8 @@ export default function Sidebar({ pantalla, onCambiar }) {
       setError(err.message);
     }
   }
+
+  const categoriaAEliminar = categorias.find((c) => c.id === idAEliminar);
 
   return (
     <aside className="sidebar">
@@ -119,6 +127,21 @@ export default function Sidebar({ pantalla, onCambiar }) {
       )}
 
       {error && <p className="sidebar-error">{error}</p>}
+      {idAEliminar && (
+        <div className="modal-overlay" onClick={() => setIdAEliminar(null)}>
+          <div className="modal-tarjeta" onClick={(e) => e.stopPropagation()}>
+            <h3>Eliminar categoría</h3>
+            <p>
+              ¿Seguro que quieres eliminar «{categoriaAEliminar?.nombre}»? Sus gastos quedarán
+              sin categoría y esta acción no se puede deshacer.
+            </p>
+            <div className="modal-acciones">
+              <button className="boton boton-secundario" onClick={() => setIdAEliminar(null)}>Cancelar</button>
+              <button className="boton boton-peligro" onClick={confirmarEliminar}>Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
