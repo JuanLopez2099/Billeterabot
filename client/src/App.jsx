@@ -12,6 +12,7 @@ import Sidebar from './components/Sidebar';
 import General from './pages/General';
 import './styles/dashboard.css';
 import GastosCategoria from './pages/GastosCategoria';
+import Ingresos from './pages/Ingresos';
 
 function App() {
   const { user, loading, signOut, recoveryMode, nombre, sincronizado } = useAuth();
@@ -35,6 +36,7 @@ function App() {
             <Sidebar pantalla={pantalla} onCambiar={setPantalla} />
             <div style={{ flex: 1 }}>
               {pantalla === 'general' && <General />}
+              {pantalla === 'ingresos' && <Ingresos />}
               {pantalla === 'transferencias' && <Transferencias />}
               {pantalla.startsWith('categoria:') && (
                 <GastosCategoria key={pantalla} categoriaId={pantalla.split(':')[1]} />
