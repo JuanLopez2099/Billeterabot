@@ -57,6 +57,12 @@ export default function Sidebar({ pantalla, onCambiar }) {
       >
         🔁 Transferencias
       </button>
+      <button
+        className={`sidebar-item ${pantalla === 'ingresos' ? 'sidebar-item--activo' : ''}`}
+        onClick={() => onCambiar('ingresos')}
+      >
+        💰 Ingresos
+      </button>
 
       <div className="sidebar-separador" />
 
