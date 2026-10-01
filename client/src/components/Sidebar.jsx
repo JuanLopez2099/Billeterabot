@@ -1,5 +1,10 @@
 import { useState } from 'react';
 import { useCategorias } from '../context/useCategorias';
+import iconoGeneral from '../assets/iconos/general.svg';
+import iconoTransferencias from '../assets/iconos/transferencias.svg';
+import iconoIngresos from '../assets/iconos/ingresos.svg';
+import iconoGuardar from '../assets/iconos/guardar.svg';
+import iconoCancelar from '../assets/iconos/cancelar.svg';
 
 export default function Sidebar({ pantalla, onCambiar }) {
   const { categorias, crear, editar, eliminar } = useCategorias();
@@ -10,6 +15,7 @@ export default function Sidebar({ pantalla, onCambiar }) {
   const [nombreEditado, setNombreEditado] = useState('');
   const [error, setError] = useState('');
   const [idAEliminar, setIdAEliminar] = useState(null);
+  
 
   async function manejarCrear(e) {
     e.preventDefault();
@@ -57,19 +63,22 @@ export default function Sidebar({ pantalla, onCambiar }) {
         className={`sidebar-item ${pantalla === 'general' ? 'sidebar-item--activo' : ''}`}
         onClick={() => onCambiar('general')}
       >
-        🏠 General
+        <img src={iconoGeneral} alt="" className="sidebar-icon" />
+        General
       </button>
       <button
         className={`sidebar-item ${pantalla === 'transferencias' ? 'sidebar-item--activo' : ''}`}
         onClick={() => onCambiar('transferencias')}
       >
-        🔁 Transferencias
+        <img src={iconoTransferencias} alt="" className="sidebar-icon" />
+        Transferencias
       </button>
       <button
         className={`sidebar-item ${pantalla === 'ingresos' ? 'sidebar-item--activo' : ''}`}
         onClick={() => onCambiar('ingresos')}
       >
-        💰 Ingresos
+        <img src={iconoIngresos} alt="" className="sidebar-icon" />
+        Ingresos
       </button>
 
       <div className="sidebar-separador" />
@@ -83,8 +92,8 @@ export default function Sidebar({ pantalla, onCambiar }) {
               onChange={(e) => setNombreEditado(e.target.value)}
               maxLength={40}
             />
-            <button type="submit" className="icon-btn" aria-label="Guardar">✔️</button>
-            <button type="button" className="icon-btn" onClick={() => setEditandoId(null)} aria-label="Cancelar">✕</button>
+            <button type="submit" className="icon-btn" aria-label="Guardar"> <img src={iconoGuardar} alt="" className="sidebar-icon-accion" /> </button>
+            <button type="button" className="icon-btn" onClick={() => setEditandoId(null)} aria-label="Cancelar"> <img src={iconoCancelar} alt="" className="sidebar-icon-accion" /></button>
           </form>
         ) : (
           <div

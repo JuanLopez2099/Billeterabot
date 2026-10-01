@@ -165,3 +165,18 @@
   .tarjetas-resumen { grid-template-columns: 1fr; }
   .dashboard-columnas { grid-template-columns: 1fr; }
 }
+
+.sidebar-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.sidebar-icon-accion {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
