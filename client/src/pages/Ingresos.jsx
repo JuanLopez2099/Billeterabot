@@ -7,6 +7,7 @@ import {
   listarCuentas,
 } from '../services/ingresos';
 import '../styles/movimientos.css';
+import EtiquetaCuenta from '../components/EtiquetaCuenta';
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
@@ -206,7 +207,7 @@ export default function Ingresos() {
                     {ing.descripcion || 'Sin descripción'}
                   </div>
                   <div className="movimiento-meta">
-                    <span className="pill">{ing.cuenta?.nombre}</span>
+                    <EtiquetaCuenta nombre={ing.cuenta?.nombre} />
                     <span>{ing.fecha}</span>
                   </div>
                 </div>

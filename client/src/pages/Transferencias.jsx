@@ -7,6 +7,7 @@ import {
 } from '../services/transferencias';
 import { listarCuentas } from '../services/ingresos'; 
 import '../styles/movimientos.css';
+import { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
 
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
@@ -204,7 +205,10 @@ export default function Transferencias() {
                 <span className="movimiento-icono movimiento-icono--transferencia">⇄</span>
                 <div className="movimiento-info">
                   <div className="movimiento-descripcion">
-                    {t.cuenta_origen?.nombre} → {t.cuenta_destino?.nombre}
+                    <EtiquetasTransferencia
+                      origen={t.cuenta_origen?.nombre}
+                      destino={t.cuenta_destino?.nombre}
+                    />
                   </div>
                   <div className="movimiento-meta">
                     <span>{t.fecha}</span>

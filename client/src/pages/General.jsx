@@ -4,6 +4,7 @@ import { obtenerResumen } from '../services/resumen';
 import { listarHistorial } from '../services/historial';
 import '../styles/movimientos.css';
 import '../styles/dashboard.css';
+import EtiquetaCuenta, { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
 
 function formatoPesos(numero) {
   return new Intl.NumberFormat('es-CO', {
@@ -23,11 +24,15 @@ function iconoYColor(tipo) {
 
 function descripcionMovimiento(m) {
   if (m.tipo === 'transferencia') {
-    return `${m.cuenta_origen?.nombre} → ${m.cuenta_destino?.nombre}`;
+    return (
+      <EtiquetasTransferencia
+        origen={m.cuenta_origen?.nombre}
+        destino={m.cuenta_destino?.nombre}
+      />
+    );
   }
   return m.descripcion || 'Sin descripción';
-}
-
+} 
 function montoConSigno(m) {
   const texto = formatoPesos(m.monto);
   if (m.tipo === 'ingreso') return `+ ${texto}`;
@@ -106,7 +111,7 @@ export default function General() {
                     <div className="movimiento-info">
                       <div className="movimiento-descripcion">{descripcionMovimiento(m)}</div>
                       <div className="movimiento-meta">
-                        {m.tipo !== 'transferencia' && <span className="pill">{m.cuenta?.nombre}</span>}
+                        {m.tipo !== 'transferencia' && <EtiquetaCuenta nombre={m.cuenta?.nombre} />}
                         {m.categoria && <span className="pill">{m.categoria.nombre}</span>}
                         <span>{m.fecha}</span>
                       </div>

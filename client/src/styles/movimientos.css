@@ -292,3 +292,52 @@
   font-size: 14px;
   margin-bottom: 16px;
 }
+
+/* Etiqueta de cuenta/banco: color de la marca translúcido + logo */
+.etiqueta-cuenta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+
+.etiqueta-cuenta-logo {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+
+.etiqueta-cuenta-inicial {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.etiquetas-transferencia {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.etiquetas-transferencia-flecha {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}

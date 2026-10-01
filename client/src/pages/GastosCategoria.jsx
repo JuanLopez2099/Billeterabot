@@ -3,6 +3,7 @@ import { listarGastos, crearGasto, editarGasto, eliminarGasto } from '../service
 import { listarCuentas } from '../services/ingresos';
 import { useCategorias } from '../context/useCategorias';
 import '../styles/movimientos.css';
+import EtiquetaCuenta from '../components/EtiquetaCuenta';
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 const OPCION_NUEVA = '__nueva__';
@@ -250,7 +251,7 @@ useEffect(() => {
                 <div className="movimiento-info">
                   <div className="movimiento-descripcion">{g.descripcion || 'Sin descripción'}</div>
                   <div className="movimiento-meta">
-                    <span className="pill">{g.cuenta?.nombre}</span>
+                    <EtiquetaCuenta nombre={g.cuenta?.nombre} />
                     <span>{g.fecha}</span>
                   </div>
                 </div>
