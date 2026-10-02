@@ -1,42 +1,54 @@
+// client/src/components/Sidebar.jsx
 import { useState } from 'react';
 import { useCategorias } from '../context/useCategorias';
+import CategoriaCampos from './CategoriaCampos';
+import { iconoPorClave } from '../utils/categoriaOpciones';
 import iconoGeneral from '../assets/iconos/general.svg';
 import iconoTransferencias from '../assets/iconos/transferencias.svg';
 import iconoIngresos from '../assets/iconos/ingresos.svg';
-import iconoGuardar from '../assets/iconos/guardar.svg';
-import iconoCancelar from '../assets/iconos/cancelar.svg';
+
+const CATEGORIA_VACIA = { nombre: '', color: '#7a7a6e', icono: 'otros' };
 
 export default function Sidebar({ pantalla, onCambiar }) {
   const { categorias, crear, editar, eliminar } = useCategorias();
 
-  const [creandoNueva, setCreandoNueva] = useState(false);
-  const [nombreNueva, setNombreNueva] = useState('');
-  const [editandoId, setEditandoId] = useState(null);
-  const [nombreEditado, setNombreEditado] = useState('');
+
+  const [modalAbierto, setModalAbierto] = useState(null);
+  const [campos, setCampos] = useState(CATEGORIA_VACIA);
+  const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const [idAEliminar, setIdAEliminar] = useState(null);
-  
 
-  async function manejarCrear(e) {
-    e.preventDefault();
-    try {
-      await crear(nombreNueva);
-      setNombreNueva('');
-      setCreandoNueva(false);
-      setError('');
-    } catch (err) {
-      setError(err.message);
-    }
+  function abrirCrear() {
+    setCampos(CATEGORIA_VACIA);
+    setError('');
+    setModalAbierto('crear');
   }
 
-  async function manejarEditar(e) {
+  function abrirEditar(categoria) {
+    setCampos({ nombre: categoria.nombre, color: categoria.color, icono: categoria.icono });
+    setError('');
+    setModalAbierto(categoria.id);
+  }
+
+  function cerrarModal() {
+    setModalAbierto(null);
+  }
+
+  async function manejarSubmit(e) {
     e.preventDefault();
+    setGuardando(true);
     try {
-      await editar(editandoId, nombreEditado);
-      setEditandoId(null);
-      setError('');
+      if (modalAbierto === 'crear') {
+        await crear(campos);
+      } else {
+        await editar(modalAbierto, campos);
+      }
+      cerrarModal();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setGuardando(false);
     }
   }
 
@@ -83,19 +95,9 @@ export default function Sidebar({ pantalla, onCambiar }) {
 
       <div className="sidebar-separador" />
 
-      {categorias.map((c) =>
-        editandoId === c.id ? (
-          <form key={c.id} onSubmit={manejarEditar} className="sidebar-form-inline">
-            <input
-              autoFocus
-              value={nombreEditado}
-              onChange={(e) => setNombreEditado(e.target.value)}
-              maxLength={40}
-            />
-            <button type="submit" className="icon-btn" aria-label="Guardar"> <img src={iconoGuardar} alt="" className="sidebar-icon-accion" /> </button>
-            <button type="button" className="icon-btn" onClick={() => setEditandoId(null)} aria-label="Cancelar"> <img src={iconoCancelar} alt="" className="sidebar-icon-accion" /></button>
-          </form>
-        ) : (
+      {categorias.map((c) => {
+        const logo = iconoPorClave(c.icono);
+        return (
           <div
             key={c.id}
             role="button"
@@ -103,7 +105,6 @@ export default function Sidebar({ pantalla, onCambiar }) {
             onClick={() => onCambiar(`categoria:${c.id}`)}
             onKeyDown={(e) => {
               if (e.target !== e.currentTarget) return;
-
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 onCambiar(`categoria:${c.id}`);
@@ -114,56 +115,63 @@ export default function Sidebar({ pantalla, onCambiar }) {
             }`}
           >
             <span className="sidebar-item-texto">
-              🏷️ {c.nombre}
+              <span className="sidebar-categoria-icono" style={{ backgroundColor: `${c.color}33` }}>
+                {logo ? <img src={logo} alt="" /> : c.nombre.charAt(0).toUpperCase()}
+              </span>
+              {c.nombre}
             </span>
 
             <span className="sidebar-item-acciones">
               <button
                 className="icon-btn"
                 aria-label="Editar categoría"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditandoId(c.id);
-                  setNombreEditado(c.nombre);
-                }}
+                onClick={(e) => { e.stopPropagation(); abrirEditar(c); }}
               >
                 ✏️
               </button>
-
               <button
                 className="icon-btn"
                 aria-label="Eliminar categoría"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  manejarEliminar(c.id);
-                }}
+                onClick={(e) => { e.stopPropagation(); manejarEliminar(c.id); }}
               >
                 🗑️
               </button>
             </span>
           </div>
-        )
+        );
+      })}
+
+      <button className="sidebar-item sidebar-item--nueva" onClick={abrirCrear}>
+        ＋ Nueva categoría
+      </button>
+
+      {modalAbierto && (
+        <div className="modal-overlay" onClick={cerrarModal}>
+          <div className="modal-tarjeta modal-tarjeta--ancha" onClick={(e) => e.stopPropagation()}>
+            <h3>{modalAbierto === 'crear' ? 'Nueva categoría' : 'Editar categoría'}</h3>
+            <form onSubmit={manejarSubmit} className="formulario-grid">
+              <CategoriaCampos
+                nombre={campos.nombre}
+                onNombreChange={(nombre) => setCampos((c) => ({ ...c, nombre }))}
+                color={campos.color}
+                onColorChange={(color) => setCampos((c) => ({ ...c, color }))}
+                icono={campos.icono}
+                onIconoChange={(icono) => setCampos((c) => ({ ...c, icono }))}
+              />
+              {error && <p className="mensaje-error campo-ancho">{error}</p>}
+              <div className="formulario-acciones campo-ancho">
+                <button type="submit" className="boton boton-primario" disabled={guardando}>
+                  {guardando ? 'Guardando...' : 'Guardar'}
+                </button>
+                <button type="button" className="boton boton-secundario" onClick={cerrarModal}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
-      {creandoNueva ? (
-        <form onSubmit={manejarCrear} className="sidebar-form-inline">
-          <input
-            autoFocus
-            placeholder="Nombre"
-            value={nombreNueva}
-            onChange={(e) => setNombreNueva(e.target.value)}
-            maxLength={40}
-          />
-          <button type="submit" className="icon-btn" aria-label="Guardar"> <img src={iconoGuardar} alt="" className="sidebar-icon-accion" /></button>
-          <button type="button" className="icon-btn" onClick={() => setCreandoNueva(false)} aria-label="Cancelar"> <img src={iconoCancelar} alt="" className="sidebar-icon-accion" /> </button>
-        </form>
-      ) : (
-        <button className="sidebar-item sidebar-item--nueva" onClick={() => setCreandoNueva(true)}>
-          ＋ Nueva categoría
-        </button>
-      )}
-
-      {error && <p className="sidebar-error">{error}</p>}
       {idAEliminar && (
         <div className="modal-overlay" onClick={() => setIdAEliminar(null)}>
           <div className="modal-tarjeta" onClick={(e) => e.stopPropagation()}>

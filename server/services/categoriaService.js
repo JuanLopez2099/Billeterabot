@@ -1,15 +1,26 @@
 const supabase = require('../config/supabaseClient');
 const { errorValidacion } = require('../utils/errores');
 
-const CATEGORIAS_PREDEFINIDAS = [
-  'Alimentación',
-  'Transporte',
-  'Servicios',
-  'Ocio',
-  'Cuidado personal',
+const PREDEFINIDAS = [
+  { nombre: 'Alimentación', icono: 'alimentacion', color: '#c9a227' },
+  { nombre: 'Transporte', icono: 'transporte', color: '#35618c' },
+  { nombre: 'Servicios', icono: 'servicios', color: '#7a7a6e' },
+  { nombre: 'Ocio', icono: 'ocio', color: '#1f5c3f' },
+  { nombre: 'Cuidado personal', icono: 'cuidado-personal', color: '#8a4a63' },
 ];
 
-const CAMPOS = 'id, nombre, es_predefinida';
+const ICONOS_VALIDOS = [
+  'alimentacion', 'transporte', 'servicios', 'ocio', 'cuidado-personal',
+  'hogar', 'salud', 'educacion', 'mascotas', 'ropa', 'tecnologia',
+  'viajes', 'regalos', 'otros',
+];
+
+const COLORES_VALIDOS = [
+  '#1f5c3f', '#b3413a', '#35618c', '#c9a227', '#7a7a6e', '#6c4f8a',
+  '#5c8a6e', '#a85c32', '#4a7c8c', '#8a4a63', '#94792c', '#3d5a99',
+];
+
+const CAMPOS = 'id, nombre, es_predefinida, color, icono';
 
 function validarNombre(nombre) {
   const limpio = typeof nombre === 'string' ? nombre.trim() : '';
@@ -20,6 +31,20 @@ function validarNombre(nombre) {
     throw errorValidacion('El nombre no puede superar los 40 caracteres');
   }
   return limpio;
+}
+
+function validarColor(color) {
+  if (!COLORES_VALIDOS.includes(color)) {
+    throw errorValidacion('El color seleccionado no es válido');
+  }
+  return color;
+}
+
+function validarIcono(icono) {
+  if (!ICONOS_VALIDOS.includes(icono)) {
+    throw errorValidacion('El ícono seleccionado no es válido');
+  }
+  return icono;
 }
 
 function errorConEstado(mensaje, status) {
@@ -38,10 +63,12 @@ async function sembrarPredefinidasUnaVez(usuarioId) {
   if (errorUsuario) throw errorUsuario;
   if (usuario.categorias_sembradas) return false;
 
-  const filas = CATEGORIAS_PREDEFINIDAS.map((nombre) => ({
+  const filas = PREDEFINIDAS.map(({ nombre, icono, color }) => ({
     usuario_id: usuarioId,
     nombre,
     es_predefinida: true,
+    icono,
+    color,
   }));
 
   const { error: errorInsert } = await supabase
@@ -71,12 +98,20 @@ async function listarCategorias(usuarioId) {
   return data;
 }
 
-async function crearCategoria(usuarioId, { nombre }) {
+async function crearCategoria(usuarioId, { nombre, color, icono }) {
   const nombreLimpio = validarNombre(nombre);
+  const colorValido = validarColor(color);
+  const iconoValido = validarIcono(icono);
 
   const { data, error } = await supabase
     .from('categorias')
-    .insert([{ usuario_id: usuarioId, nombre: nombreLimpio, es_predefinida: false }])
+    .insert([{
+      usuario_id: usuarioId,
+      nombre: nombreLimpio,
+      es_predefinida: false,
+      color: colorValido,
+      icono: iconoValido,
+    }])
     .select(CAMPOS)
     .single();
 
@@ -90,12 +125,14 @@ async function crearCategoria(usuarioId, { nombre }) {
   return data;
 }
 
-async function editarCategoria(usuarioId, categoriaId, { nombre }) {
+async function editarCategoria(usuarioId, categoriaId, { nombre, color, icono }) {
   const nombreLimpio = validarNombre(nombre);
+  const colorValido = validarColor(color);
+  const iconoValido = validarIcono(icono);
 
   const { data, error } = await supabase
     .from('categorias')
-    .update({ nombre: nombreLimpio })
+    .update({ nombre: nombreLimpio, color: colorValido, icono: iconoValido })
     .eq('id', categoriaId)
     .eq('usuario_id', usuarioId)
     .select(CAMPOS);

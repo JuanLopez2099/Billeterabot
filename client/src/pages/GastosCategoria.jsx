@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { listarGastos, crearGasto, editarGasto, eliminarGasto } from '../services/gastos';
 import { listarCuentas } from '../services/ingresos';
 import { useCategorias } from '../context/useCategorias';
-import '../styles/movimientos.css';
+import CategoriaCampos from '../components/CategoriaCampos';
 import EtiquetaCuenta from '../components/EtiquetaCuenta';
+import '../styles/movimientos.css';
+
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 const OPCION_NUEVA = '__nueva__';
+const NUEVA_CATEGORIA_VACIA = { nombre: '', color: '#7a7a6e', icono: 'otros' };
 
 function formatoPesos(numero) {
   return new Intl.NumberFormat('es-CO', {
@@ -30,28 +33,22 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
   const { categorias, buscarPorNombre, crear: crearCategoria } = useCategorias();
   const categoriaActual = categorias.find((c) => c.id === categoriaId);
 
-  
-
   const [gastos, setGastos] = useState([]);
   const [cuentas, setCuentas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [aviso, setAviso] = useState('');
 
   const [monto, setMonto] = useState('');
   const [cuentaId, setCuentaId] = useState('');
   const [categoriaSeleccion, setCategoriaSeleccion] = useState(categoriaId);
-  const [nombreNuevaCategoria, setNombreNuevaCategoria] = useState('');
+  const [nuevaCategoria, setNuevaCategoria] = useState(NUEVA_CATEGORIA_VACIA);
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState(hoy);
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [idAEliminar, setIdAEliminar] = useState(null);
 
-  const categoriaSeleccionada = categorias.find(
-    (categoria) => categoria.id === categoriaSeleccion
-  );
-
+  const categoriaSeleccionada = categorias.find((c) => c.id === categoriaSeleccion);
   const ejemploDescripcion = categoriaSeleccionada?.es_predefinida
     ? EJEMPLOS_DESCRIPCION[categoriaSeleccionada.nombre] || EJEMPLO_GENERICO
     : EJEMPLO_GENERICO;
@@ -69,34 +66,33 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
     }
   }
 
+  useEffect(() => {
+    let activo = true;
 
-useEffect(() => {
-  let activo = true;
-
-  async function cargar() {
-    try {
-      const [listaGastos, listaCuentas] = await Promise.all([listarGastos(), listarCuentas()]);
-      if (activo) {
-        setGastos(listaGastos.filter((g) => g.categoria?.id === categoriaId));
-        setCuentas(listaCuentas);
+    async function cargar() {
+      try {
+        const [listaGastos, listaCuentas] = await Promise.all([listarGastos(), listarCuentas()]);
+        if (activo) {
+          setGastos(listaGastos.filter((g) => g.categoria?.id === categoriaId));
+          setCuentas(listaCuentas);
+        }
+      } catch (err) {
+        if (activo) setError(err.message);
+      } finally {
+        if (activo) setCargando(false);
       }
-    } catch (err) {
-      if (activo) setError(err.message);
-    } finally {
-      if (activo) setCargando(false);
     }
-  }
 
-  cargar();
-  return () => { activo = false; };
-}, [categoriaId]);
+    cargar();
+    return () => { activo = false; };
+  }, [categoriaId]);
 
   function limpiarFormulario() {
     setEditandoId(null);
     setMonto('');
     setCuentaId('');
     setCategoriaSeleccion(categoriaId);
-    setNombreNuevaCategoria('');
+    setNuevaCategoria(NUEVA_CATEGORIA_VACIA);
     setDescripcion('');
     setFecha(hoy);
   }
@@ -111,18 +107,17 @@ useEffect(() => {
     setError('');
   }
 
-
   async function resolverCategoria() {
     if (categoriaSeleccion !== OPCION_NUEVA) {
       return categoriaSeleccion;
     }
 
-    const existente = buscarPorNombre(nombreNuevaCategoria);
+    const existente = buscarPorNombre(nuevaCategoria.nombre);
     if (existente) {
-    return existente.id;
+      return existente.id;
     }
 
-    const nueva = await crearCategoria(nombreNuevaCategoria);
+    const nueva = await crearCategoria(nuevaCategoria);
     return nueva.id;
   }
 
@@ -139,7 +134,6 @@ useEffect(() => {
         await crearGasto(datos);
       }
 
-      setAviso('');
       limpiarFormulario();
 
       if (categoriaFinalId !== categoriaId) {
@@ -213,20 +207,19 @@ useEffect(() => {
               <option value={OPCION_NUEVA}>＋ Crear nueva categoría…</option>
             </select>
           </div>
+
           {categoriaSeleccion === OPCION_NUEVA && (
-            <div>
-              <label htmlFor="nueva-categoria">Nombre de la categoría</label>
-              <input
-                id="nueva-categoria"
-                type="text"
-                placeholder="Ej. Salud"
-                value={nombreNuevaCategoria}
-                onChange={(e) => setNombreNuevaCategoria(e.target.value)}
-                maxLength={40}
-                required
-              />
-            </div>
+            <CategoriaCampos
+              idPrefix="nueva-categoria"
+              nombre={nuevaCategoria.nombre}
+              onNombreChange={(nombre) => setNuevaCategoria((c) => ({ ...c, nombre }))}
+              color={nuevaCategoria.color}
+              onColorChange={(color) => setNuevaCategoria((c) => ({ ...c, color }))}
+              icono={nuevaCategoria.icono}
+              onIconoChange={(icono) => setNuevaCategoria((c) => ({ ...c, icono }))}
+            />
           )}
+
           <div className="campo-ancho">
             <label htmlFor="descripcion">Descripción (opcional)</label>
             <input
@@ -261,7 +254,6 @@ useEffect(() => {
         </form>
       </div>
 
-      {aviso && <p className="mensaje-aviso">{aviso}</p>}
       {error && <p className="mensaje-error">{error}</p>}
 
       <div className="tarjeta">

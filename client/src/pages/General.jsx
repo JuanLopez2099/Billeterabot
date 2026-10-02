@@ -6,6 +6,7 @@ import '../styles/movimientos.css';
 import '../styles/dashboard.css';
 import EtiquetaCuenta, { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
 import { useCategorias } from '../context/useCategorias';
+import EtiquetaCategoria from '../components/EtiquetaCategoria';
 
 function formatoPesos(numero) {
   return new Intl.NumberFormat('es-CO', {
@@ -15,7 +16,6 @@ function formatoPesos(numero) {
   }).format(numero);
 }
 
-const COLORES = ['#1f5c3f', '#c9a227', '#5c8a6e', '#b3413a', '#7a7a6e', '#35618c'];
 
 function iconoYColor(tipo) {
   if (tipo === 'ingreso') return { icono: '↑', clase: '' };
@@ -114,9 +114,7 @@ export default function General() {
                       <div className="movimiento-descripcion">{descripcionMovimiento(m)}</div>
                       <div className="movimiento-meta">
                         {m.tipo !== 'transferencia' && <EtiquetaCuenta nombre={m.cuenta?.nombre} />}
-                        {m.tipo === 'gasto' && (
-                          <span className="pill">{m.categoria?.nombre || 'Sin categoría'}</span>
-                        )}
+                        {m.tipo === 'gasto' && <EtiquetaCategoria categoria={m.categoria} />}
                         <span>{m.fecha}</span>
                       </div>
                     </div>
@@ -145,17 +143,17 @@ export default function General() {
                     innerRadius={55}
                     outerRadius={85}
                   >
-                    {resumen.distribucionCategoria.map((_, i) => (
-                      <Cell key={i} fill={COLORES[i % COLORES.length]} />
+                    {resumen.distribucionCategoria.map((c) => (
+                      <Cell key={c.nombre} fill={c.color} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(valor) => formatoPesos(valor)} />
                 </PieChart>
               </ResponsiveContainer>
               <ul className="leyenda-categorias">
-                {resumen.distribucionCategoria.map((c, i) => (
+                {resumen.distribucionCategoria.map((c) => (
                   <li key={c.nombre}>
-                    <span className="leyenda-punto" style={{ background: COLORES[i % COLORES.length] }} />
+                    <span className="leyenda-punto" style={{ background: c.color }} />
                     {c.nombre} — {c.porcentaje}%
                   </li>
                 ))}
