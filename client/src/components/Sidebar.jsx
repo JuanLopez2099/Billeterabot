@@ -54,6 +54,7 @@ export default function Sidebar({ pantalla, onCambiar }) {
 
   function manejarEliminar(id) {
     setIdAEliminar(id);
+    setError('');
   }
 
   async function confirmarEliminar() {
@@ -144,6 +145,8 @@ export default function Sidebar({ pantalla, onCambiar }) {
       <button className="sidebar-item sidebar-item--nueva" onClick={abrirCrear}>
         ＋ Nueva categoría
       </button>
+
+      {error && !modalAbierto && <p className="sidebar-error">{error}</p>}
 
       {modalAbierto && (
         <div className="modal-overlay" onClick={cerrarModal}>
