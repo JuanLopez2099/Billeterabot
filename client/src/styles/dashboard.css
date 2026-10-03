@@ -286,3 +286,16 @@
   color: var(--color-border);
   cursor: not-allowed;
 }
+
+.tarjeta-encabezado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.tarjeta-encabezado h2 { margin: 0; }
+.tarjeta-encabezado-nota {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}

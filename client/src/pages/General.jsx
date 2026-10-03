@@ -4,7 +4,7 @@ import {
   BarChart, Bar,
   LineChart, Line,
   XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { obtenerResumen } from '../services/resumen';
 import { listarHistorial } from '../services/historial';
@@ -54,9 +54,9 @@ function montoConSigno(m) {
 }
 
 
-function Comparacion({ valor, positivoEsBueno, etiqueta }) {
+function Comparacion({ valor, positivoEsBueno, etiqueta, textoVacio }) {
   if (valor === null) {
-    return <span className="tarjeta-resumen-sub tarjeta-resumen-sub--neutral">— {etiqueta}</span>;
+    return <span className="tarjeta-resumen-sub tarjeta-resumen-sub--neutral">{textoVacio}</span>;
   }
   const esBueno = positivoEsBueno ? valor >= 0 : valor <= 0;
   const flecha = valor > 0 ? '▲' : valor < 0 ? '▼' : '—';
@@ -123,7 +123,7 @@ export default function General() {
         <div className="dashboard-columna">
           <div className="tarjetas-resumen">
             <div className="tarjeta tarjeta-resumen tarjeta-resumen--destacada tarjeta-resumen--ancha">
-              <span className="tarjeta-resumen-titulo">Saldo disponible</span>
+              <span className="tarjeta-resumen-titulo">Saldo disponible histórico</span>
               <span className="tarjeta-resumen-valor">{formatoPesos(resumen.saldoDisponible)}</span>
             </div>
 
@@ -135,7 +135,12 @@ export default function General() {
             <div className="tarjeta tarjeta-resumen">
               <span className="tarjeta-resumen-titulo">Gastos del mes</span>
               <span className="tarjeta-resumen-valor">{formatoPesos(resumen.gastadoEsteMes)}</span>
-              <Comparacion valor={resumen.variacionGastos} positivoEsBueno={false} etiqueta="vs. mes anterior" />
+              <Comparacion
+                valor={resumen.variacionGastos}
+                positivoEsBueno={false}
+                etiqueta="vs. mes anterior"
+                textoVacio="Sin gastos el mes anterior"
+              />
             </div>
 
             <div className="tarjeta tarjeta-resumen">
@@ -143,7 +148,13 @@ export default function General() {
               <span className={`tarjeta-resumen-valor ${resumen.balanceMes < 0 ? 'tarjeta-resumen-valor--negativo' : ''}`}>
                 {formatoPesos(resumen.balanceMes)}
               </span>
-              <Comparacion valor={resumen.porcentajeAhorro} positivoEsBueno etiqueta="ahorrado" />
+              {resumen.porcentajeAhorro === null ? (
+                <span className="tarjeta-resumen-sub tarjeta-resumen-sub--neutral">Sin ingresos este mes</span>
+              ) : resumen.balanceMes >= 0 ? (
+                <span className="tarjeta-resumen-sub tarjeta-resumen-sub--positivo">Ahorraste el {resumen.porcentajeAhorro}%</span>
+              ) : (
+                <span className="tarjeta-resumen-sub tarjeta-resumen-sub--negativo">Gastaste más de lo que ingresó</span>
+              )}
             </div>
 
             <div className="tarjeta tarjeta-resumen">
@@ -151,14 +162,13 @@ export default function General() {
               <span className="tarjeta-resumen-valor">{formatoPesos(resumen.promedioDiarioGasto)}</span>
             </div>
 
-            <div className="tarjeta tarjeta-resumen">
-              <span className="tarjeta-resumen-titulo">Movimientos</span>
-              <span className="tarjeta-resumen-valor">{resumen.movimientos}</span>
-            </div>
           </div>
 
           <div className="tarjeta">
-            <h2>Últimos movimientos</h2>
+            <div className="tarjeta-encabezado">
+              <h2>Últimos movimientos</h2>
+              <span className="tarjeta-encabezado-nota">{resumen.movimientos} este mes</span>
+            </div>
             {historial.length === 0 ? (
               <p className="estado-vacio">Todavía no hay movimientos.</p>
             ) : (
@@ -203,6 +213,8 @@ export default function General() {
                       nameKey="nombre"
                       innerRadius={50}
                       outerRadius={80}
+                      stroke="var(--color-surface)"
+                      strokeWidth={2}
                     >
                       {resumen.distribucionCategoria.map((c) => (
                         <Cell key={c.nombre} fill={c.color} />
@@ -231,8 +243,9 @@ export default function General() {
                 <XAxis dataKey="mes" tickFormatter={formatoMesCorto} tick={{ fontSize: 12 }} />
                 <YAxis tickFormatter={formatoCompacto} tick={{ fontSize: 11 }} width={48} />
                 <Tooltip formatter={(valor) => formatoPesos(valor)} labelFormatter={formatoMesCorto} />
-                <Bar dataKey="ingresos" fill="#1f5c3f" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="gastos" fill="#b3413a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="ingresos" name="Ingresos" fill="#1f5c3f" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="gastos" name="Gastos" fill="#b3413a" radius={[4, 4, 0, 0]} />
+                <Legend />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -250,6 +263,7 @@ export default function General() {
                 />
                 <Line type="monotone" dataKey="anterior" stroke="#a9a89c" strokeDasharray="4 3" dot={false} name="Mes anterior" />
                 <Line type="monotone" dataKey="actual" stroke="#1f5c3f" strokeWidth={2} dot={false} name="Este mes" connectNulls={false} />
+                <Legend />
               </LineChart>
             </ResponsiveContainer>
           </div>
