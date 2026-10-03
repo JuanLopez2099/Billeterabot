@@ -12,6 +12,7 @@ import '../styles/movimientos.css';
 import '../styles/dashboard.css';
 import EtiquetaCuenta, { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
 import EtiquetaCategoria from '../components/EtiquetaCategoria';
+import SelectorMes from '../components/SelectorMes';
 import { useCategorias } from '../context/useCategorias';
 
 
@@ -68,6 +69,10 @@ function Comparacion({ valor, positivoEsBueno, etiqueta }) {
 
 export default function General() {
   const { categorias } = useCategorias();
+
+  const mesActual = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }).slice(0, 7);
+  const [mes, setMes] = useState(mesActual);
+
   const [resumen, setResumen] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -79,7 +84,7 @@ export default function General() {
     async function cargar() {
       try {
         const [datosResumen, datosHistorial] = await Promise.all([
-          obtenerResumen(),
+          obtenerResumen(mes),
           listarHistorial(15),
         ]);
         if (activo) {
@@ -96,17 +101,22 @@ export default function General() {
 
     cargar();
     return () => { activo = false; };
-  }, [categorias]);
+  }, [mes, categorias]);
 
-  if (cargando) return <div className="pagina"><p className="estado-cargando">Cargando...</p></div>;
-  if (error) return <div className="pagina"><p className="mensaje-error">{error}</p></div>;
+  if (cargando && !resumen) return <div className="pagina-dashboard"><p className="estado-cargando">Cargando...</p></div>;
+  if (error && !resumen) return <div className="pagina-dashboard"><p className="mensaje-error">{error}</p></div>;
 
   return (
     <div className="pagina-dashboard">
-      <div className="pagina-header">
-        <h1>General</h1>
-        <p>Resumen de tus movimientos — {resumen.mes}</p>
+      <div className="pagina-header pagina-header--dashboard">
+        <div>
+          <h1>General</h1>
+          <p>Resumen de tus movimientos</p>
+        </div>
+        <SelectorMes mes={mes} mesMaximo={mesActual} onCambiar={setMes} />
       </div>
+
+      {error && <p className="mensaje-error">{error}</p>}
 
       <div className="dashboard-columnas">
         {/* Columna izquierda: tarjetas + historial */}
@@ -185,7 +195,7 @@ export default function General() {
               <p className="estado-vacio">Sin gastos este mes.</p>
             ) : (
               <>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie
                       data={resumen.distribucionCategoria}
@@ -215,7 +225,7 @@ export default function General() {
 
           <div className="tarjeta">
             <h2>Ingresos vs. gastos — últimos 6 meses</h2>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={240}>
               <BarChart data={resumen.ingresosVsGastos}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                 <XAxis dataKey="mes" tickFormatter={formatoMesCorto} tick={{ fontSize: 12 }} />
@@ -229,7 +239,7 @@ export default function General() {
 
           <div className="tarjeta">
             <h2>Gasto acumulado: este mes vs. el anterior</h2>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={240}>
               <LineChart data={resumen.gastoAcumulado}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                 <XAxis dataKey="dia" tick={{ fontSize: 11 }} interval={4} />
