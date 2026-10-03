@@ -8,6 +8,7 @@ import iconoTransferencias from '../assets/iconos/transferencias.svg';
 import iconoIngresos from '../assets/iconos/ingresos.svg';
 import { IconoEditar, IconoEliminar } from './IconosAccion';
 import { useEffect} from 'react';
+import iconoSinCategoria from '../assets/iconos/sin-categoria.svg';
 
 const CATEGORIA_VACIA = { nombre: '', color: '#7a7a6e', icono: 'otros' };
 
@@ -151,6 +152,18 @@ export default function Sidebar({ pantalla, onCambiar }) {
           </div>
         );
       })}
+
+      <button
+        className={`sidebar-item sidebar-item--categoria ${pantalla === 'sin-categoria' ? 'sidebar-item--activo' : ''}`}
+        onClick={() => onCambiar('sin-categoria')}
+      >
+        <span className="sidebar-item-texto">
+          <span className="sidebar-categoria-icono" style={{ backgroundColor: '#7a7a6e33' }}>
+            <img src={iconoSinCategoria} alt="" />
+          </span>
+          Sin categoría
+        </span>
+      </button>
 
       <button className="sidebar-item sidebar-item--nueva" onClick={abrirCrear}>
         ＋ Nueva categoría
