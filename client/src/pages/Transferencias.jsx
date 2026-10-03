@@ -8,6 +8,7 @@ import {
 import { listarCuentas } from '../services/ingresos'; 
 import '../styles/movimientos.css';
 import { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
+import { IconoEditar, IconoEliminar } from '../components/IconosAccion';
 
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
@@ -216,8 +217,8 @@ export default function Transferencias() {
                 </div>
                 <span className="movimiento-monto movimiento-monto--neutral">{formatoPesos(t.monto)}</span>
                 <div className="movimiento-acciones">
-                  <button className="icon-btn" onClick={() => comenzarEdicion(t)} aria-label="Editar">✏️</button>
-                  <button className="icon-btn" onClick={() => pedirEliminar(t.id)} aria-label="Eliminar">🗑️</button>
+                  <button className="icon-btn" onClick={() => comenzarEdicion(t)} aria-label="Editar"><IconoEditar /></button>
+                  <button className="icon-btn icon-btn--peligro" onClick={() => pedirEliminar(t.id)} aria-label="Eliminar"><IconoEliminar /></button>
                 </div>
               </li>
             ))}
