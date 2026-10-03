@@ -7,6 +7,7 @@ import iconoGeneral from '../assets/iconos/general.svg';
 import iconoTransferencias from '../assets/iconos/transferencias.svg';
 import iconoIngresos from '../assets/iconos/ingresos.svg';
 import { IconoEditar, IconoEliminar } from './IconosAccion';
+import { useEffect} from 'react';
 
 const CATEGORIA_VACIA = { nombre: '', color: '#7a7a6e', icono: 'otros' };
 
@@ -34,7 +35,15 @@ export default function Sidebar({ pantalla, onCambiar }) {
 
   function cerrarModal() {
     setModalAbierto(null);
+    setError('');
   }
+
+
+  useEffect(() => {
+    if (!error || modalAbierto) return;
+    const temporizador = setTimeout(() => setError(''), 5000);
+    return () => clearTimeout(temporizador);
+  }, [error, modalAbierto]);
 
   async function manejarSubmit(e) {
     e.preventDefault();
