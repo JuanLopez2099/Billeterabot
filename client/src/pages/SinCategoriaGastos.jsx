@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
-import { listarGastos, crearGasto, editarGasto, eliminarGasto } from '../services/gastos';
+import { listarGastos, editarGasto, eliminarGasto } from '../services/gastos';
 import { listarCuentas } from '../services/ingresos';
 import { useCategorias } from '../context/useCategorias';
 import CategoriaCampos from '../components/CategoriaCampos';
 import EtiquetaCuenta from '../components/EtiquetaCuenta';
 import '../styles/movimientos.css';
 
-
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 const OPCION_NUEVA = '__nueva__';
-const OPCION_SIN_CATEGORIA = '__ninguna__';
 const NUEVA_CATEGORIA_VACIA = { nombre: '', color: '#7a7a6e', icono: 'otros' };
 
 function formatoPesos(numero) {
@@ -20,44 +18,28 @@ function formatoPesos(numero) {
   }).format(numero);
 }
 
-const EJEMPLOS_DESCRIPCION = {
-  Alimentación: 'Ej. Mercado de la semana',
-  Transporte: 'Ej. Pasajes o gasolina',
-  Servicios: 'Ej. Factura de internet',
-  Ocio: 'Ej. Cine con amigos',
-  'Cuidado personal': 'Ej. Corte de cabello',
-};
-
-const EJEMPLO_GENERICO = 'Ej. Describe brevemente el gasto';
-
-export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
+export default function SinCategoriaGastos({ onCambiarPantalla }) {
   const { categorias, buscarPorNombre, crear: crearCategoria } = useCategorias();
-  const categoriaActual = categorias.find((c) => c.id === categoriaId);
 
   const [gastos, setGastos] = useState([]);
   const [cuentas, setCuentas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
+  const [editandoId, setEditandoId] = useState(null);
   const [monto, setMonto] = useState('');
   const [cuentaId, setCuentaId] = useState('');
-  const [categoriaSeleccion, setCategoriaSeleccion] = useState(categoriaId);
+  const [categoriaSeleccion, setCategoriaSeleccion] = useState(OPCION_NUEVA);
   const [nuevaCategoria, setNuevaCategoria] = useState(NUEVA_CATEGORIA_VACIA);
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState(hoy);
   const [guardando, setGuardando] = useState(false);
-  const [editandoId, setEditandoId] = useState(null);
   const [idAEliminar, setIdAEliminar] = useState(null);
-
-  const categoriaSeleccionada = categorias.find((c) => c.id === categoriaSeleccion);
-  const ejemploDescripcion = categoriaSeleccionada?.es_predefinida
-    ? EJEMPLOS_DESCRIPCION[categoriaSeleccionada.nombre] || EJEMPLO_GENERICO
-    : EJEMPLO_GENERICO;
 
   async function cargarDatos() {
     try {
       const [listaGastos, listaCuentas] = await Promise.all([listarGastos(), listarCuentas()]);
-      setGastos(listaGastos.filter((g) => g.categoria?.id === categoriaId));
+      setGastos(listaGastos.filter((g) => !g.categoria));
       setCuentas(listaCuentas);
       setError('');
     } catch (err) {
@@ -74,7 +56,7 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
       try {
         const [listaGastos, listaCuentas] = await Promise.all([listarGastos(), listarCuentas()]);
         if (activo) {
-          setGastos(listaGastos.filter((g) => g.categoria?.id === categoriaId));
+          setGastos(listaGastos.filter((g) => !g.categoria));
           setCuentas(listaCuentas);
         }
       } catch (err) {
@@ -86,13 +68,13 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
 
     cargar();
     return () => { activo = false; };
-  }, [categoriaId]);
+  }, []);
 
-  function limpiarFormulario() {
+  function cerrarEdicion() {
     setEditandoId(null);
     setMonto('');
     setCuentaId('');
-    setCategoriaSeleccion(categoriaId);
+    setCategoriaSeleccion(OPCION_NUEVA);
     setNuevaCategoria(NUEVA_CATEGORIA_VACIA);
     setDescripcion('');
     setFecha(hoy);
@@ -102,25 +84,23 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
     setEditandoId(gasto.id);
     setMonto(String(gasto.monto));
     setCuentaId(gasto.cuenta?.id || '');
-    setCategoriaSeleccion(gasto.categoria?.id || categoriaId);
+    setCategoriaSeleccion(OPCION_NUEVA); // este gasto ya está sin categoría
     setDescripcion(gasto.descripcion || '');
     setFecha(gasto.fecha);
     setError('');
   }
 
   async function resolverCategoria() {
-    if (categoriaSeleccion === OPCION_SIN_CATEGORIA) {
-      return null;
+    if (categoriaSeleccion === OPCION_NUEVA && !nuevaCategoria.nombre) {
+      return null; // se queda sin categoría
     }
     if (categoriaSeleccion !== OPCION_NUEVA) {
       return categoriaSeleccion;
     }
-
     const existente = buscarPorNombre(nuevaCategoria.nombre);
     if (existente) {
       return existente.id;
     }
-
     const nueva = await crearCategoria(nuevaCategoria);
     return nueva.id;
   }
@@ -130,18 +110,11 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
     setGuardando(true);
     try {
       const categoriaFinalId = await resolverCategoria();
-      const datos = { monto, cuentaId, categoriaId: categoriaFinalId, descripcion, fecha };
+      await editarGasto(editandoId, { monto, cuentaId, categoriaId: categoriaFinalId, descripcion, fecha });
+      cerrarEdicion();
 
-      if (editandoId) {
-        await editarGasto(editandoId, datos);
-      } else {
-        await crearGasto(datos);
-      }
-
-      limpiarFormulario();
-
-      if (categoriaFinalId !== categoriaId) {
-        onCambiarPantalla(categoriaFinalId ? `categoria:${categoriaFinalId}` : 'sin-categoria');
+      if (categoriaFinalId) {
+        onCambiarPantalla(`categoria:${categoriaFinalId}`);
       } else {
         await cargarDatos();
       }
@@ -162,7 +135,7 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
     try {
       await eliminarGasto(id);
       setGastos((actuales) => actuales.filter((g) => g.id !== id));
-      if (editandoId === id) limpiarFormulario();
+      if (editandoId === id) cerrarEdicion();
     } catch (err) {
       setError(err.message);
     }
@@ -171,102 +144,99 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
   return (
     <div className="pagina">
       <div className="pagina-header">
-        <h1>{categoriaActual?.nombre || 'Categoría'}</h1>
-        <p>Gastos registrados en esta categoría</p>
+        <h1>Sin categoría</h1>
+        <p>Gastos que no tienen una categoría asignada</p>
       </div>
 
-      <div className="tarjeta">
-        <h2>{editandoId ? 'Editar gasto' : 'Nuevo gasto'}</h2>
-        <form onSubmit={manejarSubmit} className="formulario-grid">
-          <div>
-            <label htmlFor="monto">Monto</label>
-            <input
-              id="monto"
-              type="number"
-              placeholder="Ej. 45000"
-              value={monto}
-              onChange={(e) => setMonto(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="cuenta">Cuenta</label>
-            <select id="cuenta" value={cuentaId} onChange={(e) => setCuentaId(e.target.value)} required>
-              <option value="">Selecciona una cuenta</option>
-              {cuentas.map((c) => (
-                <option key={c.id} value={c.id}>{c.nombre}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="categoria">Categoría</label>
-            <select
-              id="categoria"
-              value={categoriaSeleccion}
-              onChange={(e) => setCategoriaSeleccion(e.target.value)}
-            >
-              {categorias.map((c) => (
-                <option key={c.id} value={c.id}>{c.nombre}</option>
-              ))}
-              <option value={OPCION_SIN_CATEGORIA}>Sin categoría</option>
-              <option value={OPCION_NUEVA}>＋ Crear nueva categoría…</option>
-            </select>
-          </div>
+      {editandoId && (
+        <div className="tarjeta">
+          <h2>Editar gasto</h2>
+          <form onSubmit={manejarSubmit} className="formulario-grid">
+            <div>
+              <label htmlFor="monto">Monto</label>
+              <input
+                id="monto"
+                type="number"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="cuenta">Cuenta</label>
+              <select id="cuenta" value={cuentaId} onChange={(e) => setCuentaId(e.target.value)} required>
+                <option value="">Selecciona una cuenta</option>
+                {cuentas.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="categoria">Categoría</label>
+              <select
+                id="categoria"
+                value={categoriaSeleccion}
+                onChange={(e) => setCategoriaSeleccion(e.target.value)}
+              >
+                <option value={OPCION_NUEVA}>Sin categoría / crear nueva</option>
+                {categorias.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+            </div>
 
-          {categoriaSeleccion === OPCION_NUEVA && (
-            <CategoriaCampos
-              idPrefix="nueva-categoria"
-              nombre={nuevaCategoria.nombre}
-              onNombreChange={(nombre) => setNuevaCategoria((c) => ({ ...c, nombre }))}
-              color={nuevaCategoria.color}
-              onColorChange={(color) => setNuevaCategoria((c) => ({ ...c, color }))}
-              icono={nuevaCategoria.icono}
-              onIconoChange={(icono) => setNuevaCategoria((c) => ({ ...c, icono }))}
-            />
-          )}
+            {categoriaSeleccion === OPCION_NUEVA && (
+              <CategoriaCampos
+                idPrefix="categoria-sin-cat"
+                nombre={nuevaCategoria.nombre}
+                onNombreChange={(nombre) => setNuevaCategoria((c) => ({ ...c, nombre }))}
+                color={nuevaCategoria.color}
+                onColorChange={(color) => setNuevaCategoria((c) => ({ ...c, color }))}
+                icono={nuevaCategoria.icono}
+                onIconoChange={(icono) => setNuevaCategoria((c) => ({ ...c, icono }))}
+              />
+            )}
 
-          <div className="campo-ancho">
-            <label htmlFor="descripcion">Descripción (opcional)</label>
-            <input
-              id="descripcion"
-              type="text"
-              placeholder={ejemploDescripcion}
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-            />
-          </div>
-          <div>
-            <label htmlFor="fecha">Fecha</label>
-            <input
-              id="fecha"
-              type="date"
-              value={fecha}
-              max={hoy}
-              onChange={(e) => setFecha(e.target.value)}
-              required
-            />
-          </div>
-          <div className="formulario-acciones">
-            <button type="submit" className="boton boton-primario" disabled={guardando}>
-              {guardando ? 'Guardando...' : editandoId ? 'Guardar cambios' : 'Agregar gasto'}
-            </button>
-            {editandoId && (
-              <button type="button" className="boton boton-secundario" onClick={limpiarFormulario}>
+            <div className="campo-ancho">
+              <label htmlFor="descripcion">Descripción (opcional)</label>
+              <input
+                id="descripcion"
+                type="text"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="fecha">Fecha</label>
+              <input
+                id="fecha"
+                type="date"
+                value={fecha}
+                max={hoy}
+                onChange={(e) => setFecha(e.target.value)}
+                required
+              />
+            </div>
+            <div className="formulario-acciones">
+              <button type="submit" className="boton boton-primario" disabled={guardando}>
+                {guardando ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+              <button type="button" className="boton boton-secundario" onClick={cerrarEdicion}>
                 Cancelar
               </button>
-            )}
-          </div>
-        </form>
-      </div>
+            </div>
+          </form>
+        </div>
+      )}
 
       {error && <p className="mensaje-error">{error}</p>}
 
       <div className="tarjeta">
-        <h2>Gastos en esta categoría</h2>
+        <h2>Gastos sin categoría</h2>
         {cargando ? (
           <p className="estado-cargando">Cargando...</p>
         ) : gastos.length === 0 ? (
-          <p className="estado-vacio">Todavía no hay gastos en esta categoría.</p>
+          <p className="estado-vacio">No tienes gastos sin categoría.</p>
         ) : (
           <ul className="lista-movimientos">
             {gastos.map((g) => (

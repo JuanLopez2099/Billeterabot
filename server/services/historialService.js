@@ -8,7 +8,7 @@ async function listarHistorial(usuarioId, limite = 20) {
       .eq('usuario_id', usuarioId),
     supabase
       .from('gastos')
-      .select('id, monto, descripcion, fecha, creado_en, cuenta:cuentas(id, nombre), categoria:categorias(id, nombre)')
+      .select('id, monto, descripcion, fecha, creado_en, cuenta:cuentas(id, nombre), categoria:categorias(id, nombre, color, icono)')
       .eq('usuario_id', usuarioId),
     supabase
       .from('transferencias')

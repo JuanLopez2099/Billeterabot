@@ -7,6 +7,8 @@ import {
 } from '../services/transferencias';
 import { listarCuentas } from '../services/ingresos'; 
 import '../styles/movimientos.css';
+import { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
+import { IconoEditar, IconoEliminar } from '../components/IconosAccion';
 
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
@@ -204,7 +206,10 @@ export default function Transferencias() {
                 <span className="movimiento-icono movimiento-icono--transferencia">⇄</span>
                 <div className="movimiento-info">
                   <div className="movimiento-descripcion">
-                    {t.cuenta_origen?.nombre} → {t.cuenta_destino?.nombre}
+                    <EtiquetasTransferencia
+                      origen={t.cuenta_origen?.nombre}
+                      destino={t.cuenta_destino?.nombre}
+                    />
                   </div>
                   <div className="movimiento-meta">
                     <span>{t.fecha}</span>
@@ -212,8 +217,8 @@ export default function Transferencias() {
                 </div>
                 <span className="movimiento-monto movimiento-monto--neutral">{formatoPesos(t.monto)}</span>
                 <div className="movimiento-acciones">
-                  <button className="icon-btn" onClick={() => comenzarEdicion(t)} aria-label="Editar">✏️</button>
-                  <button className="icon-btn" onClick={() => pedirEliminar(t.id)} aria-label="Eliminar">🗑️</button>
+                  <button className="icon-btn" onClick={() => comenzarEdicion(t)} aria-label="Editar"><IconoEditar /></button>
+                  <button className="icon-btn icon-btn--peligro" onClick={() => pedirEliminar(t.id)} aria-label="Eliminar"><IconoEliminar /></button>
                 </div>
               </li>
             ))}

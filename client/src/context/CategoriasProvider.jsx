@@ -9,8 +9,6 @@ function ordenar(lista) {
 
 export function CategoriasProvider({ children }) {
   const [categorias, setCategorias] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     let activo = true;
@@ -20,9 +18,7 @@ export function CategoriasProvider({ children }) {
         const lista = await api.listarCategorias();
         if (activo) setCategorias(lista);
       } catch (err) {
-        if (activo) setError(err.message);
-      } finally {
-        if (activo) setCargando(false);
+        if (activo) console.error('No se pudieron cargar las categorías:', err);
       }
     }
 
@@ -37,14 +33,14 @@ export function CategoriasProvider({ children }) {
     return categorias.find((c) => normalizar(c.nombre) === buscado);
   }
 
-  async function crear(nombre) {
-    const nueva = await api.crearCategoria(nombre);
+  async function crear(datos) {
+    const nueva = await api.crearCategoria(datos);
     setCategorias((actuales) => ordenar([...actuales, nueva]));
-    return nueva; 
+    return nueva;
   }
 
-  async function editar(id, nombre) {
-    const actualizada = await api.editarCategoria(id, nombre);
+  async function editar(id, datos) {
+    const actualizada = await api.editarCategoria(id, datos);
     setCategorias((actuales) =>
       ordenar(actuales.map((c) => (c.id === id ? actualizada : c)))
     );
@@ -56,7 +52,7 @@ export function CategoriasProvider({ children }) {
     setCategorias((actuales) => actuales.filter((c) => c.id !== id));
   }
 
-  const value = { categorias, cargando, error, buscarPorNombre, crear, editar, eliminar };
+  const value = { categorias, buscarPorNombre, crear, editar, eliminar };
 
   return (
     <CategoriasContext.Provider value={value}>{children}</CategoriasContext.Provider>

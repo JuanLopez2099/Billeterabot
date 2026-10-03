@@ -193,15 +193,24 @@
 }
 
 .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 15px;
   padding: 6px;
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
 }
+.icon-btn svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
 .icon-btn:hover { background: var(--color-bg); color: var(--color-text); }
+.icon-btn--peligro:hover { background: var(--color-negative-soft); color: var(--color-negative); }
+.icon-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 
 .estado-vacio,
 .estado-cargando {
@@ -257,38 +266,120 @@
   .formulario-grid { grid-template-columns: 1fr; }
 }
 
-.nav-tabs {
-  display: flex;
-  gap: 8px;
-  max-width: 720px;
-  margin: 24px auto 0;
-  padding: 0 20px;
-}
-
-.nav-tab {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
+/* Etiqueta de cuenta/banco: color de la marca translúcido + logo */
+.etiqueta-cuenta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 6px;
+  border: 1px solid transparent;
   border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+
+.etiqueta-cuenta-logo {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+
+.etiqueta-cuenta-inicial {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.etiquetas-transferencia {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.etiquetas-transferencia-flecha {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.modal-tarjeta--ancha {
+  max-width: 480px;
+}
+
+.selector-color {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selector-color-opcion {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
   cursor: pointer;
-  font-family: inherit;
+  padding: 0;
 }
 
-.nav-tab--activo {
-  background: var(--color-primary-soft);
-  border-color: var(--color-primary-soft);
-  color: var(--color-primary-dark);
+.selector-color-opcion--activa {
+  border-color: var(--color-text);
+  box-shadow: 0 0 0 2px #fff inset;
 }
 
-.mensaje-aviso {
-  background: #fdf3da;
-  color: #8a6d1d;
-  border: 1px solid #f0dca0;
+.selector-icono {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selector-icono-opcion {
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  font-size: 14px;
-  margin-bottom: 16px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.selector-icono-opcion img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.selector-icono-opcion--activa {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+
+.etiqueta-cuenta {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.etiqueta-cuenta-texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

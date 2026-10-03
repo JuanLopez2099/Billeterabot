@@ -13,6 +13,7 @@ import General from './pages/General';
 import './styles/dashboard.css';
 import GastosCategoria from './pages/GastosCategoria';
 import Ingresos from './pages/Ingresos';
+import SinCategoriaGastos from './pages/SinCategoriaGastos';
 
 function App() {
   const { user, loading, signOut, recoveryMode, nombre, sincronizado } = useAuth();
@@ -39,7 +40,14 @@ function App() {
               {pantalla === 'ingresos' && <Ingresos />}
               {pantalla === 'transferencias' && <Transferencias />}
               {pantalla.startsWith('categoria:') && (
-                <GastosCategoria key={pantalla} categoriaId={pantalla.split(':')[1]} />
+                <GastosCategoria
+                  key={pantalla}
+                  categoriaId={pantalla.split(':')[1]}
+                  onCambiarPantalla={setPantalla}
+                />
+              )}
+              {pantalla === 'sin-categoria' && (
+                <SinCategoriaGastos onCambiarPantalla={setPantalla} />
               )}
             </div>
           </div>

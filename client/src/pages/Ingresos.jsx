@@ -7,6 +7,8 @@ import {
   listarCuentas,
 } from '../services/ingresos';
 import '../styles/movimientos.css';
+import EtiquetaCuenta from '../components/EtiquetaCuenta';
+import { IconoEditar, IconoEliminar } from '../components/IconosAccion';
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
@@ -206,14 +208,14 @@ export default function Ingresos() {
                     {ing.descripcion || 'Sin descripción'}
                   </div>
                   <div className="movimiento-meta">
-                    <span className="pill">{ing.cuenta?.nombre}</span>
+                    <EtiquetaCuenta nombre={ing.cuenta?.nombre} />
                     <span>{ing.fecha}</span>
                   </div>
                 </div>
                 <span className="movimiento-monto">+ {formatoPesos(ing.monto)}</span>
                 <div className="movimiento-acciones">
-                  <button className="icon-btn" onClick={() => comenzarEdicion(ing)} aria-label="Editar">✏️</button>
-                  <button className="icon-btn" onClick={() => pedirEliminar(ing.id)} aria-label="Eliminar">🗑️</button>
+                  <button className="icon-btn" onClick={() => comenzarEdicion(ing)} aria-label="Editar"><IconoEditar /></button>
+                  <button className="icon-btn icon-btn--peligro" onClick={() => pedirEliminar(ing.id)} aria-label="Eliminar"><IconoEliminar /></button>
                 </div>
               </li>
             ))}
