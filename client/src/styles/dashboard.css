@@ -31,6 +31,10 @@
   font-family: inherit;
 }
 
+.sidebar > button.sidebar-item:not(.sidebar-item--nueva) {
+  justify-content: flex-start;
+}
+
 .sidebar-item:hover { background: var(--color-bg); }
 
 .sidebar-item--activo {
@@ -164,4 +168,43 @@
   .sidebar-separador { display: none; }
   .tarjetas-resumen { grid-template-columns: 1fr; }
   .dashboard-columnas { grid-template-columns: 1fr; }
+}
+
+.sidebar-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sidebar-icon-accion {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.sidebar-item-texto {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-categoria-icono {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.sidebar-categoria-icono img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
 }

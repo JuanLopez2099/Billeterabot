@@ -37,19 +37,19 @@ export function CategoriasProvider({ children }) {
     return categorias.find((c) => normalizar(c.nombre) === buscado);
   }
 
-  async function crear(nombre) {
-    const nueva = await api.crearCategoria(nombre);
+  async function crear(datos) {
+    const nueva = await api.crearCategoria(datos);
     setCategorias((actuales) => ordenar([...actuales, nueva]));
-    return nueva; 
+    return nueva;
   }
 
-  async function editar(id, nombre) {
-    const actualizada = await api.editarCategoria(id, nombre);
-    setCategorias((actuales) =>
-      ordenar(actuales.map((c) => (c.id === id ? actualizada : c)))
-    );
-    return actualizada;
-  }
+async function editar(id, datos) {
+  const actualizada = await api.editarCategoria(id, datos);
+  setCategorias((actuales) =>
+    ordenar(actuales.map((c) => (c.id === id ? actualizada : c)))
+  );
+  return actualizada;
+}
 
   async function eliminar(id) {
     await api.eliminarCategoria(id);

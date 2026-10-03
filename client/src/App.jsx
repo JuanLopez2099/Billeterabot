@@ -39,7 +39,11 @@ function App() {
               {pantalla === 'ingresos' && <Ingresos />}
               {pantalla === 'transferencias' && <Transferencias />}
               {pantalla.startsWith('categoria:') && (
-                <GastosCategoria key={pantalla} categoriaId={pantalla.split(':')[1]} />
+                <GastosCategoria
+                  key={pantalla}
+                  categoriaId={pantalla.split(':')[1]}
+                  onCambiarPantalla={setPantalla}
+                />
               )}
             </div>
           </div>

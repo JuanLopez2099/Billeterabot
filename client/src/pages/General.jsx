@@ -4,6 +4,9 @@ import { obtenerResumen } from '../services/resumen';
 import { listarHistorial } from '../services/historial';
 import '../styles/movimientos.css';
 import '../styles/dashboard.css';
+import EtiquetaCuenta, { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
+import { useCategorias } from '../context/useCategorias';
+import EtiquetaCategoria from '../components/EtiquetaCategoria';
 
 function formatoPesos(numero) {
   return new Intl.NumberFormat('es-CO', {
@@ -13,7 +16,6 @@ function formatoPesos(numero) {
   }).format(numero);
 }
 
-const COLORES = ['#1f5c3f', '#c9a227', '#5c8a6e', '#b3413a', '#7a7a6e', '#35618c'];
 
 function iconoYColor(tipo) {
   if (tipo === 'ingreso') return { icono: '↑', clase: '' };
@@ -23,11 +25,15 @@ function iconoYColor(tipo) {
 
 function descripcionMovimiento(m) {
   if (m.tipo === 'transferencia') {
-    return `${m.cuenta_origen?.nombre} → ${m.cuenta_destino?.nombre}`;
+    return (
+      <EtiquetasTransferencia
+        origen={m.cuenta_origen?.nombre}
+        destino={m.cuenta_destino?.nombre}
+      />
+    );
   }
   return m.descripcion || 'Sin descripción';
-}
-
+} 
 function montoConSigno(m) {
   const texto = formatoPesos(m.monto);
   if (m.tipo === 'ingreso') return `+ ${texto}`;
@@ -36,6 +42,7 @@ function montoConSigno(m) {
 }
 
 export default function General() {
+  const { categorias } = useCategorias();
   const [resumen, setResumen] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -64,7 +71,7 @@ export default function General() {
 
     cargar();
     return () => { activo = false; };
-  }, []);
+  }, [categorias]);
 
   if (cargando) return <div className="pagina"><p className="estado-cargando">Cargando...</p></div>;
   if (error) return <div className="pagina"><p className="mensaje-error">{error}</p></div>;
@@ -106,8 +113,8 @@ export default function General() {
                     <div className="movimiento-info">
                       <div className="movimiento-descripcion">{descripcionMovimiento(m)}</div>
                       <div className="movimiento-meta">
-                        {m.tipo !== 'transferencia' && <span className="pill">{m.cuenta?.nombre}</span>}
-                        {m.categoria && <span className="pill">{m.categoria.nombre}</span>}
+                        {m.tipo !== 'transferencia' && <EtiquetaCuenta nombre={m.cuenta?.nombre} />}
+                        {m.tipo === 'gasto' && <EtiquetaCategoria categoria={m.categoria} />}
                         <span>{m.fecha}</span>
                       </div>
                     </div>
@@ -136,17 +143,17 @@ export default function General() {
                     innerRadius={55}
                     outerRadius={85}
                   >
-                    {resumen.distribucionCategoria.map((_, i) => (
-                      <Cell key={i} fill={COLORES[i % COLORES.length]} />
+                    {resumen.distribucionCategoria.map((c) => (
+                      <Cell key={c.nombre} fill={c.color} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(valor) => formatoPesos(valor)} />
                 </PieChart>
               </ResponsiveContainer>
               <ul className="leyenda-categorias">
-                {resumen.distribucionCategoria.map((c, i) => (
+                {resumen.distribucionCategoria.map((c) => (
                   <li key={c.nombre}>
-                    <span className="leyenda-punto" style={{ background: COLORES[i % COLORES.length] }} />
+                    <span className="leyenda-punto" style={{ background: c.color }} />
                     {c.nombre} — {c.porcentaje}%
                   </li>
                 ))}
