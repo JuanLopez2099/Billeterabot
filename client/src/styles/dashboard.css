@@ -64,23 +64,6 @@
   margin: 8px 4px;
 }
 
-.sidebar-form-inline {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-}
-
-.sidebar-form-inline input {
-  flex: 1;
-  min-width: 0;
-  padding: 6px 8px;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-family: inherit;
-}
-
 .sidebar-error {
   color: var(--color-negative);
   font-size: 12px;
@@ -174,13 +157,6 @@
   height: 18px;
   object-fit: contain;
   flex-shrink: 0;
-}
-
-.sidebar-icon-accion {
-  display: block;
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
 }
 
 .sidebar-item-texto {
@@ -326,10 +302,6 @@
   font-size: 17px;
   font-weight: 700;
   color: var(--color-primary-dark);
-}
-
-.saldo-cuenta--negativo .saldo-cuenta-valor {
-  color: var(--color-negative);
 }
 
 .top-gastos-lista {

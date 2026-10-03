@@ -266,42 +266,6 @@
   .formulario-grid { grid-template-columns: 1fr; }
 }
 
-.nav-tabs {
-  display: flex;
-  gap: 8px;
-  max-width: 720px;
-  margin: 24px auto 0;
-  padding: 0 20px;
-}
-
-.nav-tab {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.nav-tab--activo {
-  background: var(--color-primary-soft);
-  border-color: var(--color-primary-soft);
-  color: var(--color-primary-dark);
-}
-
-.mensaje-aviso {
-  background: #fdf3da;
-  color: #8a6d1d;
-  border: 1px solid #f0dca0;
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  font-size: 14px;
-  margin-bottom: 16px;
-}
-
 /* Etiqueta de cuenta/banco: color de la marca translúcido + logo */
 .etiqueta-cuenta {
   display: inline-flex;
