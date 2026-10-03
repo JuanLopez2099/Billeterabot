@@ -19,7 +19,7 @@ export default function EtiquetaCategoria({ categoria }) {
           {categoria.nombre.charAt(0).toUpperCase()}
         </span>
       )}
-      {categoria.nombre}
+      <span className="etiqueta-cuenta-texto">{categoria.nombre}</span>
     </span>
   );
 }

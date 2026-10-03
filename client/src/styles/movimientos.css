@@ -406,3 +406,16 @@
   border-color: var(--color-primary);
   background: var(--color-primary-soft);
 }
+
+
+.etiqueta-cuenta {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.etiqueta-cuenta-texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
