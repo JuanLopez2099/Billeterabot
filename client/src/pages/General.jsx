@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  PieChart, Pie, Cell,
+  BarChart, Bar,
+  LineChart, Line,
+  XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
+} from 'recharts';
 import { obtenerResumen } from '../services/resumen';
 import { listarHistorial } from '../services/historial';
 import '../styles/movimientos.css';
 import '../styles/dashboard.css';
 import EtiquetaCuenta, { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
-import { useCategorias } from '../context/useCategorias';
 import EtiquetaCategoria from '../components/EtiquetaCategoria';
+import { useCategorias } from '../context/useCategorias';
+
 
 function formatoPesos(numero) {
   return new Intl.NumberFormat('es-CO', {
@@ -16,6 +23,14 @@ function formatoPesos(numero) {
   }).format(numero);
 }
 
+function formatoCompacto(numero) {
+  return new Intl.NumberFormat('es-CO', { notation: 'compact', compactDisplay: 'short' }).format(numero);
+}
+
+const NOMBRES_MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+function formatoMesCorto(mes) {
+  return NOMBRES_MES[Number(mes.slice(5, 7)) - 1];
+}
 
 function iconoYColor(tipo) {
   if (tipo === 'ingreso') return { icono: '↑', clase: '' };
@@ -25,20 +40,30 @@ function iconoYColor(tipo) {
 
 function descripcionMovimiento(m) {
   if (m.tipo === 'transferencia') {
-    return (
-      <EtiquetasTransferencia
-        origen={m.cuenta_origen?.nombre}
-        destino={m.cuenta_destino?.nombre}
-      />
-    );
+    return <EtiquetasTransferencia origen={m.cuenta_origen?.nombre} destino={m.cuenta_destino?.nombre} />;
   }
   return m.descripcion || 'Sin descripción';
-} 
+}
+
 function montoConSigno(m) {
   const texto = formatoPesos(m.monto);
   if (m.tipo === 'ingreso') return `+ ${texto}`;
   if (m.tipo === 'gasto') return `- ${texto}`;
   return texto;
+}
+
+
+function Comparacion({ valor, positivoEsBueno, etiqueta }) {
+  if (valor === null) {
+    return <span className="tarjeta-resumen-sub tarjeta-resumen-sub--neutral">— {etiqueta}</span>;
+  }
+  const esBueno = positivoEsBueno ? valor >= 0 : valor <= 0;
+  const flecha = valor > 0 ? '▲' : valor < 0 ? '▼' : '—';
+  return (
+    <span className={`tarjeta-resumen-sub ${esBueno ? 'tarjeta-resumen-sub--positivo' : 'tarjeta-resumen-sub--negativo'}`}>
+      {flecha} {Math.abs(valor)}% {etiqueta}
+    </span>
+  );
 }
 
 export default function General() {
@@ -55,7 +80,7 @@ export default function General() {
       try {
         const [datosResumen, datosHistorial] = await Promise.all([
           obtenerResumen(),
-          listarHistorial(10),
+          listarHistorial(15),
         ]);
         if (activo) {
           setResumen(datosResumen);
@@ -77,89 +102,147 @@ export default function General() {
   if (error) return <div className="pagina"><p className="mensaje-error">{error}</p></div>;
 
   return (
-    <div className="pagina">
+    <div className="pagina-dashboard">
       <div className="pagina-header">
         <h1>General</h1>
         <p>Resumen de tus movimientos — {resumen.mes}</p>
       </div>
 
-      <div className="tarjetas-resumen">
-        <div className="tarjeta tarjeta-resumen">
-          <span className="tarjeta-resumen-titulo">Gastado este mes</span>
-          <span className="tarjeta-resumen-valor">{formatoPesos(resumen.gastadoEsteMes)}</span>
-        </div>
-        <div className="tarjeta tarjeta-resumen tarjeta-resumen--destacada">
-          <span className="tarjeta-resumen-titulo">Saldo disponible</span>
-          <span className="tarjeta-resumen-valor">{formatoPesos(resumen.saldoDisponible)}</span>
-        </div>
-        <div className="tarjeta tarjeta-resumen">
-          <span className="tarjeta-resumen-titulo">Movimientos</span>
-          <span className="tarjeta-resumen-valor">{resumen.movimientos}</span>
-        </div>
-      </div>
-
       <div className="dashboard-columnas">
-        <div className="tarjeta">
-          <h2>Últimos movimientos</h2>
-          {historial.length === 0 ? (
-            <p className="estado-vacio">Todavía no hay movimientos.</p>
-          ) : (
-            <ul className="lista-movimientos">
-              {historial.map((m) => {
-                const { icono, clase } = iconoYColor(m.tipo);
-                return (
-                  <li key={`${m.tipo}-${m.id}`} className="movimiento-fila">
-                    <span className={`movimiento-icono ${clase}`}>{icono}</span>
-                    <div className="movimiento-info">
-                      <div className="movimiento-descripcion">{descripcionMovimiento(m)}</div>
-                      <div className="movimiento-meta">
-                        {m.tipo !== 'transferencia' && <EtiquetaCuenta nombre={m.cuenta?.nombre} />}
-                        {m.tipo === 'gasto' && <EtiquetaCategoria categoria={m.categoria} />}
-                        <span>{m.fecha}</span>
+        {/* Columna izquierda: tarjetas + historial */}
+        <div className="dashboard-columna">
+          <div className="tarjetas-resumen">
+            <div className="tarjeta tarjeta-resumen tarjeta-resumen--destacada tarjeta-resumen--ancha">
+              <span className="tarjeta-resumen-titulo">Saldo disponible</span>
+              <span className="tarjeta-resumen-valor">{formatoPesos(resumen.saldoDisponible)}</span>
+            </div>
+
+            <div className="tarjeta tarjeta-resumen">
+              <span className="tarjeta-resumen-titulo">Ingresos del mes</span>
+              <span className="tarjeta-resumen-valor">{formatoPesos(resumen.ingresosEsteMes)}</span>
+            </div>
+
+            <div className="tarjeta tarjeta-resumen">
+              <span className="tarjeta-resumen-titulo">Gastos del mes</span>
+              <span className="tarjeta-resumen-valor">{formatoPesos(resumen.gastadoEsteMes)}</span>
+              <Comparacion valor={resumen.variacionGastos} positivoEsBueno={false} etiqueta="vs. mes anterior" />
+            </div>
+
+            <div className="tarjeta tarjeta-resumen">
+              <span className="tarjeta-resumen-titulo">Balance del mes</span>
+              <span className={`tarjeta-resumen-valor ${resumen.balanceMes < 0 ? 'tarjeta-resumen-valor--negativo' : ''}`}>
+                {formatoPesos(resumen.balanceMes)}
+              </span>
+              <Comparacion valor={resumen.porcentajeAhorro} positivoEsBueno etiqueta="ahorrado" />
+            </div>
+
+            <div className="tarjeta tarjeta-resumen">
+              <span className="tarjeta-resumen-titulo">Promedio diario</span>
+              <span className="tarjeta-resumen-valor">{formatoPesos(resumen.promedioDiarioGasto)}</span>
+            </div>
+
+            <div className="tarjeta tarjeta-resumen">
+              <span className="tarjeta-resumen-titulo">Movimientos</span>
+              <span className="tarjeta-resumen-valor">{resumen.movimientos}</span>
+            </div>
+          </div>
+
+          <div className="tarjeta">
+            <h2>Últimos movimientos</h2>
+            {historial.length === 0 ? (
+              <p className="estado-vacio">Todavía no hay movimientos.</p>
+            ) : (
+              <ul className="lista-movimientos">
+                {historial.map((m) => {
+                  const { icono, clase } = iconoYColor(m.tipo);
+                  return (
+                    <li key={`${m.tipo}-${m.id}`} className="movimiento-fila">
+                      <span className={`movimiento-icono ${clase}`}>{icono}</span>
+                      <div className="movimiento-info">
+                        <div className="movimiento-descripcion">{descripcionMovimiento(m)}</div>
+                        <div className="movimiento-meta">
+                          {m.tipo !== 'transferencia' && <EtiquetaCuenta nombre={m.cuenta?.nombre} />}
+                          {m.tipo === 'gasto' && <EtiquetaCategoria categoria={m.categoria} />}
+                          <span>{m.fecha}</span>
+                        </div>
                       </div>
-                    </div>
-                    <span className={`movimiento-monto ${m.tipo === 'gasto' ? 'movimiento-monto--negativo' : m.tipo === 'transferencia' ? 'movimiento-monto--neutral' : ''}`}>
-                      {montoConSigno(m)}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+                      <span className={`movimiento-monto ${m.tipo === 'gasto' ? 'movimiento-monto--negativo' : m.tipo === 'transferencia' ? 'movimiento-monto--neutral' : ''}`}>
+                        {montoConSigno(m)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
 
-        <div className="tarjeta">
-          <h2>Distribución por categoría</h2>
-          {resumen.distribucionCategoria.length === 0 ? (
-            <p className="estado-vacio">Sin gastos este mes.</p>
-          ) : (
-            <>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={resumen.distribucionCategoria}
-                    dataKey="monto"
-                    nameKey="nombre"
-                    innerRadius={55}
-                    outerRadius={85}
-                  >
-                    {resumen.distribucionCategoria.map((c) => (
-                      <Cell key={c.nombre} fill={c.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(valor) => formatoPesos(valor)} />
-                </PieChart>
-              </ResponsiveContainer>
-              <ul className="leyenda-categorias">
-                {resumen.distribucionCategoria.map((c) => (
-                  <li key={c.nombre}>
-                    <span className="leyenda-punto" style={{ background: c.color }} />
-                    {c.nombre} — {c.porcentaje}%
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+        {/* Columna derecha: gráficos apilados */}
+        <div className="dashboard-columna">
+          <div className="tarjeta">
+            <h2>Distribución por categoría</h2>
+            {resumen.distribucionCategoria.length === 0 ? (
+              <p className="estado-vacio">Sin gastos este mes.</p>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={resumen.distribucionCategoria}
+                      dataKey="monto"
+                      nameKey="nombre"
+                      innerRadius={50}
+                      outerRadius={80}
+                    >
+                      {resumen.distribucionCategoria.map((c) => (
+                        <Cell key={c.nombre} fill={c.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(valor) => formatoPesos(valor)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <ul className="leyenda-categorias">
+                  {resumen.distribucionCategoria.map((c) => (
+                    <li key={c.nombre}>
+                      <span className="leyenda-punto" style={{ background: c.color }} />
+                      {c.nombre} — {formatoPesos(c.monto)} ({c.porcentaje}%)
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
+          <div className="tarjeta">
+            <h2>Ingresos vs. gastos — últimos 6 meses</h2>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={resumen.ingresosVsGastos}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                <XAxis dataKey="mes" tickFormatter={formatoMesCorto} tick={{ fontSize: 12 }} />
+                <YAxis tickFormatter={formatoCompacto} tick={{ fontSize: 11 }} width={48} />
+                <Tooltip formatter={(valor) => formatoPesos(valor)} labelFormatter={formatoMesCorto} />
+                <Bar dataKey="ingresos" fill="#1f5c3f" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="gastos" fill="#b3413a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="tarjeta">
+            <h2>Gasto acumulado: este mes vs. el anterior</h2>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={resumen.gastoAcumulado}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                <XAxis dataKey="dia" tick={{ fontSize: 11 }} interval={4} />
+                <YAxis tickFormatter={formatoCompacto} tick={{ fontSize: 11 }} width={48} />
+                <Tooltip
+                  formatter={(valor) => (valor === null ? '—' : formatoPesos(valor))}
+                  labelFormatter={(dia) => `Día ${dia}`}
+                />
+                <Line type="monotone" dataKey="anterior" stroke="#a9a89c" strokeDasharray="4 3" dot={false} name="Mes anterior" />
+                <Line type="monotone" dataKey="actual" stroke="#1f5c3f" strokeWidth={2} dot={false} name="Este mes" connectNulls={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

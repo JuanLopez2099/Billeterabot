@@ -89,9 +89,8 @@
 
 .tarjetas-resumen {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
 }
 
 .tarjeta-resumen {
@@ -207,4 +206,37 @@
   width: 14px;
   height: 14px;
   object-fit: contain;
+}
+
+.dashboard-columna {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0; 
+}
+
+.tarjeta-resumen--ancha {
+  grid-column: 1 / -1;
+}
+
+.tarjeta-resumen-sub {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tarjeta-resumen-sub--positivo { color: var(--color-primary-dark); }
+.tarjeta-resumen-sub--negativo { color: var(--color-negative); }
+.tarjeta-resumen-sub--neutral { color: var(--color-text-muted); }
+
+.tarjeta-resumen-valor--negativo { color: var(--color-negative); }
+
+@media (max-width: 480px) {
+  .tarjetas-resumen { grid-template-columns: 1fr; }
+}
+
+.pagina-dashboard {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 40px 32px 64px;
 }
