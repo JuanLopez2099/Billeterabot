@@ -1,4 +1,4 @@
 import { apiFetch } from './api';
 
-export const obtenerResumen = () =>
-  apiFetch('/resumen').then((d) => d.resumen);
+export const obtenerResumen = (mes) =>
+  apiFetch(`/resumen${mes ? `?mes=${mes}` : ''}`).then((d) => d.resumen);

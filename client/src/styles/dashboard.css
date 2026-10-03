@@ -89,9 +89,8 @@
 
 .tarjetas-resumen {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
 }
 
 .tarjeta-resumen {
@@ -207,4 +206,188 @@
   width: 14px;
   height: 14px;
   object-fit: contain;
+}
+
+.dashboard-columna {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0; 
+}
+
+.tarjeta-resumen--ancha {
+  grid-column: 1 / -1;
+}
+
+.tarjeta-resumen-sub {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tarjeta-resumen-sub--positivo { color: var(--color-primary-dark); }
+.tarjeta-resumen-sub--negativo { color: var(--color-negative); }
+.tarjeta-resumen-sub--neutral { color: var(--color-text-muted); }
+
+.tarjeta-resumen-valor--negativo { color: var(--color-negative); }
+
+@media (max-width: 480px) {
+  .tarjetas-resumen { grid-template-columns: 1fr; }
+}
+
+.pagina-dashboard {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 40px 32px 64px;
+}
+
+.pagina-header--dashboard {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.selector-mes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+}
+
+.selector-mes-texto {
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 110px;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.selector-mes-boton {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.selector-mes-boton:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+
+.selector-mes-boton:disabled {
+  color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.tarjeta-encabezado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.tarjeta-encabezado h2 { margin: 0; }
+.tarjeta-encabezado-nota {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.saldo-cuentas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+
+.saldo-cuenta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.saldo-cuenta .etiqueta-cuenta {
+  max-width: 100%;
+}
+
+.saldo-cuenta-valor {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.saldo-cuenta--negativo .saldo-cuenta-valor {
+  color: var(--color-negative);
+}
+
+.top-gastos-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.top-gasto-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.top-gasto-item:last-child {
+  border-bottom: none;
+}
+
+.top-gasto-numero {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.top-gasto-info {
+  min-width: 0;
+}
+
+.top-gasto-descripcion {
+  margin-bottom: 6px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.top-gasto-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.top-gasto-monto {
+  color: var(--color-negative);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .top-gasto-item {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+
+  .top-gasto-monto {
+    grid-column: 2;
+  }
 }

@@ -36,7 +36,7 @@ export default function EtiquetaCuenta({ nombre }) {
           {nombre.charAt(0).toUpperCase()}
         </span>
       )}
-      {nombre}
+      <span className="etiqueta-cuenta-texto">{nombre}</span>
     </span>
   );
 }

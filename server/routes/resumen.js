@@ -9,7 +9,7 @@ router.use(requireAuth);
 
 router.get('/', async (req, res) => {
   try {
-    const resumen = await resumenService.calcularResumen(req.user.id);
+    const resumen = await resumenService.calcularResumen(req.user.id, req.query.mes);
     res.json({ resumen });
   } catch (err) {
     manejarError(err, res);
