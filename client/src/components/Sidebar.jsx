@@ -6,6 +6,7 @@ import { iconoPorClave } from '../utils/categoriaOpciones';
 import iconoGeneral from '../assets/iconos/general.svg';
 import iconoTransferencias from '../assets/iconos/transferencias.svg';
 import iconoIngresos from '../assets/iconos/ingresos.svg';
+import { IconoEditar, IconoEliminar } from './IconosAccion';
 
 const CATEGORIA_VACIA = { nombre: '', color: '#7a7a6e', icono: 'otros' };
 
@@ -128,14 +129,14 @@ export default function Sidebar({ pantalla, onCambiar }) {
                 aria-label="Editar categoría"
                 onClick={(e) => { e.stopPropagation(); abrirEditar(c); }}
               >
-                ✏️
+                <IconoEditar />
               </button>
               <button
                 className="icon-btn"
                 aria-label="Eliminar categoría"
                 onClick={(e) => { e.stopPropagation(); manejarEliminar(c.id); }}
               >
-                🗑️
+                <IconoEliminar />
               </button>
             </span>
           </div>
