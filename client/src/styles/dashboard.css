@@ -363,3 +363,7 @@
     grid-column: 2;
   }
 }
+
+@media (hover: none) {
+  .sidebar-item-acciones { display: flex; }
+}
