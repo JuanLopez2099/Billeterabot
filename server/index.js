@@ -11,6 +11,8 @@ const categoriaService = require('./services/categoriaService');
 const gastosRoutes = require('./routes/gastos');
 const resumenRoutes = require('./routes/resumen');
 const historialRoutes = require('./routes/historial');
+const telegramRoutes = require('./routes/telegram');
+const { iniciarBot } = require('./bot/bot');
 
 const app = express();
 app.use(cors());
@@ -58,7 +60,11 @@ app.use('/categorias', categoriasRoutes);
 app.use('/gastos', gastosRoutes);
 app.use('/resumen', resumenRoutes);
 app.use('/historial', historialRoutes);
+app.use('/telegram', telegramRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
+
+  
+  iniciarBot().catch((err) => console.error('No se pudo iniciar el bot de Telegram:', err.message));
 });
