@@ -218,7 +218,7 @@ export default function General() {
             </div>
           </div>
 
-          <div className="tarjeta tarjeta-saldos">
+          <div className="tarjeta">
             <h2>Saldo por cuenta</h2>
 
             {resumen.saldoPorCuenta?.length ? (
