@@ -5,6 +5,7 @@ import { useCategorias } from '../context/useCategorias';
 import CategoriaCampos from '../components/CategoriaCampos';
 import EtiquetaCuenta from '../components/EtiquetaCuenta';
 import '../styles/movimientos.css';
+import { IconoEditar, IconoEliminar } from '../components/IconosAccion';
 
 const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 const OPCION_NUEVA = '__nueva__';
@@ -251,8 +252,8 @@ export default function SinCategoriaGastos({ onCambiarPantalla }) {
                 </div>
                 <span className="movimiento-monto movimiento-monto--negativo">- {formatoPesos(g.monto)}</span>
                 <div className="movimiento-acciones">
-                  <button className="icon-btn" onClick={() => comenzarEdicion(g)} aria-label="Editar">✏️</button>
-                  <button className="icon-btn icon-btn--peligro" onClick={() => pedirEliminar(g.id)} aria-label="Eliminar">🗑️</button>
+                  <button className="icon-btn" onClick={() => comenzarEdicion(g)} aria-label="Editar"><IconoEditar /></button>
+                  <button className="icon-btn icon-btn--peligro" onClick={() => pedirEliminar(g.id)} aria-label="Eliminar"><IconoEliminar /></button>
                 </div>
               </li>
             ))}
