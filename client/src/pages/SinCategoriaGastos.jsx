@@ -67,8 +67,16 @@ export default function SinCategoriaGastos({ onCambiarPantalla }) {
       }
     }
 
+    function recargarAlVolver() {
+      cargar();
+    }
+
+    window.addEventListener('focus', recargarAlVolver);
     cargar();
-    return () => { activo = false; };
+    return () => {
+      activo = false;
+      window.removeEventListener('focus', recargarAlVolver);
+    };
   }, []);
 
   function cerrarEdicion() {
