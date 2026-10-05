@@ -19,7 +19,18 @@ function fijarUsernameDelBot(username) {
 function crearBot(token, opciones = {}) {
   const bot = new Bot(token, opciones);
 
-  
+  const vistos = new Set();
+  const orden = [];
+  const MAX_VISTOS = 1000;
+
+  bot.use(async (ctx, next) => {
+    const id = ctx.update.update_id;
+    if (vistos.has(id)) return;
+    vistos.add(id);
+    orden.push(id);
+    if (orden.length > MAX_VISTOS) vistos.delete(orden.shift());
+    await next();
+  });
 
 
   bot.use(async (ctx, next) => {

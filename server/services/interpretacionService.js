@@ -1,19 +1,9 @@
+// server/services/interpretacionService.js
 const { normalizar } = require('../utils/texto');
 const { fechaDeHoy } = require('../utils/fechas');
 const cuentaService = require('./cuentaService');
 const categoriaService = require('./categoriaService');
 const groqService = require('./groqService');
-
-
-function restarUnDia(fecha) {
-  const d = new Date(fecha + 'T00:00:00Z');
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
-
-function resolverFecha(token) {
-  return token === 'ayer' ? restarUnDia(fechaDeHoy()) : fechaDeHoy();
-}
 
 function buscarCuenta(nombreMencionado, cuentas) {
   if (!nombreMencionado) return null;
@@ -33,7 +23,6 @@ function buscarCategoria(nombreMencionado, categorias) {
   const buscado = normalizar(nombreMencionado);
   return categorias.find((c) => normalizar(c.nombre) === buscado) || null;
 }
-
 
 async function interpretar(usuarioId, texto) {
   const [cuentas, categorias] = await Promise.all([
@@ -57,8 +46,7 @@ async function interpretar(usuarioId, texto) {
     tipo: interpretado.tipo,
     monto: montoNum,
     descripcion: interpretado.descripcion || null,
-    fecha: resolverFecha(interpretado.fecha),
-    fechaToken: interpretado.fecha,
+    fecha: fechaDeHoy(),
     cuenta: buscarCuenta(interpretado.cuenta, cuentas),
     cuentaDestino: interpretado.tipo === 'transferencia' ? buscarCuenta(interpretado.cuentaDestino, cuentas) : null,
     categoria: interpretado.tipo === 'gasto' ? buscarCategoria(interpretado.categoria, categorias) : null,
