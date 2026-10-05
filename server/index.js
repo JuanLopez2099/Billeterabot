@@ -66,5 +66,5 @@ app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 
   
-  iniciarBot().catch((err) => console.error('No se pudo iniciar el bot de Telegram:', err.message));
+  iniciarBot(app).catch((err) => console.error('No se pudo iniciar el bot de Telegram:', err.message));
 });

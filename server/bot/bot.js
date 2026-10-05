@@ -1,4 +1,4 @@
-const { Bot } = require('grammy');
+const { Bot, webhookCallback } = require('grammy');
 const telegramService = require('../services/telegramService');
 const cuentaService = require('../services/cuentaService');
 const mensajes = require('./mensajes');
@@ -99,25 +99,53 @@ function crearBot(token, opciones = {}) {
 }
 
 
-async function iniciarBot() {
+async function iniciarBot(app) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
+
   if (!token) {
-    console.log('Bot de Telegram desactivado: falta TELEGRAM_BOT_TOKEN en el .env');
+    console.log('Bot de Telegram desactivado: falta TELEGRAM_BOT_TOKEN');
     return null;
   }
 
   const bot = crearBot(token);
-  await bot.init(); 
+  await bot.init();
   fijarUsernameDelBot(bot.botInfo.username);
 
+  const baseWebhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
 
-  bot
-    .start({
-      drop_pending_updates: true,
-      onStart: (info) => console.log(`Bot de Telegram activo: @${info.username}`),
-    })
-    .catch((err) => console.error('El bot de Telegram se detuvo:', err.message));
+  if (!baseWebhookUrl) {
+    bot
+      .start({
+        onStart: (info) => console.log(`Bot de Telegram activo: @${info.username}`),
+      })
+      .catch((err) => console.error('El bot de Telegram se detuvo:', err.message));
 
+    return bot;
+  }
+
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    throw new Error('Falta configurar TELEGRAM_WEBHOOK_SECRET');
+  }
+
+  const webhookUrl = `${baseWebhookUrl.replace(/\/+$/, '')}/webhook/telegram`;
+
+  app.post(
+    '/webhook/telegram',
+    webhookCallback(bot, 'express', {
+      onTimeout: 'return',
+      timeoutMilliseconds: 8000,
+      secretToken: webhookSecret,
+    }),
+  );
+
+  await bot.api.setWebhook(webhookUrl, {
+    secret_token: webhookSecret,
+    allowed_updates: ['message', 'callback_query'],
+  });
+
+  console.log(`Webhook de Telegram activo para @${bot.botInfo.username}`);
   return bot;
 }
 
