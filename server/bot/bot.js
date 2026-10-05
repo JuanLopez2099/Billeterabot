@@ -2,6 +2,7 @@ const { Bot } = require('grammy');
 const telegramService = require('../services/telegramService');
 const cuentaService = require('../services/cuentaService');
 const mensajes = require('./mensajes');
+const flujoMovimiento = require('./flujoMovimiento');
 
 const HTML = { parse_mode: 'HTML' };
 
@@ -18,6 +19,8 @@ function fijarUsernameDelBot(username) {
 function crearBot(token, opciones = {}) {
   const bot = new Bot(token, opciones);
 
+  
+
 
   bot.use(async (ctx, next) => {
     try {
@@ -27,7 +30,7 @@ function crearBot(token, opciones = {}) {
       try {
         await ctx.reply(mensajes.errorTemporal);
       } catch {
-        // Si ni siquiera se puede avisar, no hay más que hacer
+        
       }
     }
   });
@@ -62,7 +65,7 @@ function crearBot(token, opciones = {}) {
     return ctx.reply(mensajes.bienvenidaDeNuevo(usuario.nombre, cuentas), HTML);
   });
 
-  // /ayuda -> vuelve a mostrar los formatos sugeridos
+
   bot.command('ayuda', async (ctx) => {
     const cuentas = await cuentaService.listarCuentas();
     return ctx.reply(mensajes.formatos(cuentas), HTML);
@@ -72,9 +75,10 @@ function crearBot(token, opciones = {}) {
   bot.on('message:text', async (ctx) => {
     const usuario = await telegramService.usuarioPorChat(ctx.chat.id);
     if (!usuario) return ctx.reply(mensajes.sinVincular(), HTML);
-    return ctx.reply(mensajes.proximamente, HTML);
+    return flujoMovimiento.procesarTexto(ctx, usuario.id, ctx.message.text);
   });
 
+  bot.on('callback_query:data', (ctx) => flujoMovimiento.manejarBoton(ctx));
 
   bot.catch((error) => {
     console.error('Error inesperado en el bot de Telegram:', error.error?.message || error.message);

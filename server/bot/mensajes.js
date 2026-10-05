@@ -66,9 +66,44 @@ const chatOcupado =
 const errorTemporal =
   '😕 Tuve un problema temporal y no pude completar eso. Intenta de nuevo en un momento.';
 
-// Provisional: se reemplaza en el siguiente paso, cuando el bot ya interprete mensajes
+
 const proximamente =
   '✅ Recibí tu mensaje. Muy pronto podré registrar tus movimientos desde aquí.\nEscribe /ayuda para ver cómo vas a poder escribirlos.';
+
+
+function formatoPesos(numero) {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(numero);
+}
+
+function notaFecha(token) {
+  return token === 'ayer' ? ' (ayer)' : '';
+}
+
+function movimientoRegistrado(resultado) {
+  const fecha = notaFecha(resultado.fechaToken);
+
+  if (resultado.tipo === 'transferencia') {
+    return `✅ Transferencia registrada: ${formatoPesos(resultado.monto)} de <b>${escapar(resultado.cuentaOrigen)}</b> a <b>${escapar(resultado.cuentaDestino)}</b>${fecha}.`;
+  }
+
+  if (resultado.tipo === 'ingreso') {
+    const descripcion = resultado.descripcion ? ` (${escapar(resultado.descripcion)})` : '';
+    return `✅ Ingreso registrado: +${formatoPesos(resultado.monto)} en <b>${escapar(resultado.cuenta)}</b>${descripcion}${fecha}.`;
+  }
+
+  const categoria = resultado.categoria ? ` en <b>${escapar(resultado.categoria)}</b>` : '';
+  const descripcion = resultado.descripcion ? ` (${escapar(resultado.descripcion)})` : '';
+  return `✅ Gasto registrado: -${formatoPesos(resultado.monto)}${categoria} desde <b>${escapar(resultado.cuenta)}</b>${descripcion}${fecha}.`;
+}
+
+function noEntendido(detalle) {
+  if (detalle) return `🤔 ${escapar(detalle)}`;
+  return `🤔 No logré entender ese movimiento. Escribe /ayuda para ver ejemplos.`;
+}
 
 module.exports = {
   escapar,
@@ -80,4 +115,6 @@ module.exports = {
   chatOcupado,
   errorTemporal,
   proximamente,
+  movimientoRegistrado,
+  noEntendido,
 };

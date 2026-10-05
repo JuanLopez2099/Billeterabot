@@ -121,9 +121,15 @@ export default function General() {
       }
     }
 
+    function recargarAlVolver() {
+      cargar();
+    }
+
+    window.addEventListener('focus', recargarAlVolver);
     cargar();
     return () => {
       activo = false;
+      window.removeEventListener('focus', recargarAlVolver);
     };
   }, [mes, categorias]);
 
