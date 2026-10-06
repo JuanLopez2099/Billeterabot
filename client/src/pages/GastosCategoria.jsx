@@ -85,8 +85,16 @@ export default function GastosCategoria({ categoriaId, onCambiarPantalla }) {
       }
     }
 
+    function recargarAlVolver() {
+      cargar();
+    }
+
+    window.addEventListener('focus', recargarAlVolver);
     cargar();
-    return () => { activo = false; };
+    return () => {
+      activo = false;
+      window.removeEventListener('focus', recargarAlVolver);
+    };
   }, [categoriaId]);
 
   function limpiarFormulario() {

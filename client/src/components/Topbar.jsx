@@ -1,4 +1,6 @@
-// client/src/components/Topbar.jsx
+
+import VincularTelegram from './VincularTelegram';
+
 export default function Topbar({ nombre, onCerrarSesion }) {
   return (
     <header className="topbar">
@@ -8,6 +10,7 @@ export default function Topbar({ nombre, onCerrarSesion }) {
       </div>
       <div className="topbar-usuario">
         {nombre && <span className="topbar-nombre-usuario">{nombre}</span>}
+        <VincularTelegram />
         <button className="boton boton-secundario" onClick={onCerrarSesion}>
           Cerrar sesión
         </button>

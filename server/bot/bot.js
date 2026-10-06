@@ -1,0 +1,152 @@
+const { Bot, webhookCallback } = require('grammy');
+const telegramService = require('../services/telegramService');
+const cuentaService = require('../services/cuentaService');
+const mensajes = require('./mensajes');
+const flujoMovimiento = require('./flujoMovimiento');
+
+const HTML = { parse_mode: 'HTML' };
+
+let usernameDelBot = null;
+
+function obtenerUsernameDelBot() {
+  return usernameDelBot;
+}
+
+function fijarUsernameDelBot(username) {
+  usernameDelBot = username;
+}
+
+function crearBot(token, opciones = {}) {
+  const bot = new Bot(token, opciones);
+
+  const vistos = new Set();
+  const orden = [];
+  const MAX_VISTOS = 1000;
+
+  bot.use(async (ctx, next) => {
+    const id = ctx.update.update_id;
+    if (vistos.has(id)) return;
+    vistos.add(id);
+    orden.push(id);
+    if (orden.length > MAX_VISTOS) vistos.delete(orden.shift());
+    await next();
+  });
+
+
+  bot.use(async (ctx, next) => {
+    try {
+      await next();
+    } catch (error) {
+      console.error('Error en el bot de Telegram:', error?.message || error);
+      try {
+        await ctx.reply(mensajes.errorTemporal);
+      } catch {
+        
+      }
+    }
+  });
+
+
+  bot.use(async (ctx, next) => {
+    if (ctx.chat && ctx.chat.type !== 'private') return;
+    await next();
+  });
+
+
+  bot.command('start', async (ctx) => {
+    const codigo = ctx.match.trim();
+
+    if (codigo) {
+      const resultado = await telegramService.vincularChat(codigo, ctx.chat.id);
+      if (!resultado.ok) {
+        const texto = resultado.motivo === 'chat_ocupado' ? mensajes.chatOcupado : mensajes.codigoInvalido;
+        return ctx.reply(texto, HTML);
+      }
+      const [usuario, cuentas] = await Promise.all([
+        telegramService.usuarioPorChat(ctx.chat.id),
+        cuentaService.listarCuentas(),
+      ]);
+      return ctx.reply(mensajes.vinculado(usuario?.nombre, cuentas), HTML);
+    }
+
+    const usuario = await telegramService.usuarioPorChat(ctx.chat.id);
+    if (!usuario) return ctx.reply(mensajes.sinVincular(), HTML);
+
+    const cuentas = await cuentaService.listarCuentas();
+    return ctx.reply(mensajes.bienvenidaDeNuevo(usuario.nombre, cuentas), HTML);
+  });
+
+
+  bot.command('ayuda', async (ctx) => {
+    const cuentas = await cuentaService.listarCuentas();
+    return ctx.reply(mensajes.formatos(cuentas), HTML);
+  });
+
+
+  bot.on('message:text', async (ctx) => {
+    const usuario = await telegramService.usuarioPorChat(ctx.chat.id);
+    if (!usuario) return ctx.reply(mensajes.sinVincular(), HTML);
+    return flujoMovimiento.procesarTexto(ctx, usuario.id, ctx.message.text);
+  });
+
+  bot.on('callback_query:data', (ctx) => flujoMovimiento.manejarBoton(ctx));
+
+  bot.catch((error) => {
+    console.error('Error inesperado en el bot de Telegram:', error.error?.message || error.message);
+  });
+
+  return bot;
+}
+
+
+async function iniciarBot(app) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+
+  if (!token) {
+    console.log('Bot de Telegram desactivado: falta TELEGRAM_BOT_TOKEN');
+    return null;
+  }
+
+  const bot = crearBot(token);
+  await bot.init();
+  fijarUsernameDelBot(bot.botInfo.username);
+
+  const baseWebhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
+
+  if (!baseWebhookUrl) {
+    bot
+      .start({
+        onStart: (info) => console.log(`Bot de Telegram activo: @${info.username}`),
+      })
+      .catch((err) => console.error('El bot de Telegram se detuvo:', err.message));
+
+    return bot;
+  }
+
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    throw new Error('Falta configurar TELEGRAM_WEBHOOK_SECRET');
+  }
+
+  const webhookUrl = `${baseWebhookUrl.replace(/\/+$/, '')}/webhook/telegram`;
+
+  app.post(
+    '/webhook/telegram',
+    webhookCallback(bot, 'express', {
+      onTimeout: 'return',
+      timeoutMilliseconds: 8000,
+      secretToken: webhookSecret,
+    }),
+  );
+
+  await bot.api.setWebhook(webhookUrl, {
+    secret_token: webhookSecret,
+    allowed_updates: ['message', 'callback_query'],
+  });
+
+  console.log(`Webhook de Telegram activo para @${bot.botInfo.username}`);
+  return bot;
+}
+
+module.exports = { crearBot, iniciarBot, obtenerUsernameDelBot, fijarUsernameDelBot };
