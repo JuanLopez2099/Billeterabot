@@ -367,3 +367,10 @@
 @media (hover: none) {
   .sidebar-item-acciones { display: flex; }
 }
+
+.dashboard-acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
