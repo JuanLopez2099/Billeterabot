@@ -1,4 +1,5 @@
 import { colorDeCuenta, colorBordeDeCuenta, normalizarNombre } from '../utils/bancos';
+import { useCuentas } from '../context/useCuentas';
 
 
 const archivosLogos = import.meta.glob('../assets/bancos/*.{png,svg,webp,jpg,jpeg}', {
@@ -19,12 +20,17 @@ function nombreDeArchivo(nombre) {
 }
 
 export default function EtiquetaCuenta({ nombre }) {
+  const { buscarPorNombre } = useCuentas();
+
   if (!nombre) return null;
 
-  const color = colorDeCuenta(nombre);
-  const logo = logos[nombreDeArchivo(nombre)];
+  const propia = buscarPorNombre(nombre);
+  const colorPropio = propia?.es_propia ? propia.color : null;
 
-  const colorBorde = colorBordeDeCuenta(nombre);
+  const color = colorPropio || colorDeCuenta(nombre);
+  const colorBorde = colorPropio || colorBordeDeCuenta(nombre);
+  const logo = propia?.es_propia ? undefined : logos[nombreDeArchivo(nombre)];
+
   const estilo = { backgroundColor: `${color}26`, borderColor: `${colorBorde}59` };
 
   return (
