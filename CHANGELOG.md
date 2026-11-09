@@ -1,5 +1,10 @@
 # Changelog
 
+## Próxima versión — v1.1.0
+
+### Agregado
+- Cuentas propias con nombre y color, junto con las cuentas predefinidas. Las cuentas propias solo pueden eliminarse si no tienen movimientos.
+
 ## (primera versión: 1.0.0)
 
 ### Agregado
@@ -8,4 +13,3 @@
 - Dashboard con resumen mensual, saldo por cuenta, gráficos, top de gastos, gasto por día de la semana, selector de mes e historial de movimientos.
 - Bot de Telegram: vinculación de la cuenta, registro de gastos, ingresos y transferencias por mensaje (interpretado con Groq), botones de selección y botón Deshacer.
 - Favicon de Billeterabot y vista previa al compartir el enlace.
-
