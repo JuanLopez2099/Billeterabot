@@ -26,7 +26,7 @@ function buscarCategoria(nombreMencionado, categorias) {
 
 async function interpretar(usuarioId, texto) {
   const [cuentas, categorias] = await Promise.all([
-    cuentaService.listarCuentas(),
+    cuentaService.listarCuentas(usuarioId),
     categoriaService.listarCategorias(usuarioId),
   ]);
 
