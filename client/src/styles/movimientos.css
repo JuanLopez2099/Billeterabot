@@ -383,3 +383,36 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.modal-tarjeta--formulario {
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.selector-tipo {
+  display: flex;
+  gap: 4px;
+  background: var(--color-bg);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+}
+
+.selector-tipo-opcion {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 9px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.selector-tipo-opcion--activa {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-card);
+}
