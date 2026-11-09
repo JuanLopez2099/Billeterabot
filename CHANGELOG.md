@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+### Agregado
+- Permite registrar gastos, ingresos y transferencias directamente desde el dashboard, sin tener que entrar a una categoría.
+
 ## 1.1.0
 
 ### Agregado

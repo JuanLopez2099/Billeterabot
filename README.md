@@ -10,6 +10,7 @@ Aplicación web para llevar el control de tus finanzas personales: registra gast
 - Gastos con categorías propias (incluye gastos sin categoría), ingresos y transferencias entre cuentas.
 - Gestión de cuentas: usa las cuentas predefinidas y crea cuentas propias con nombre y color. Las cuentas propias solo se pueden eliminar cuando no tienen movimientos.
 - Dashboard con resumen mensual, saldo por cuenta, gráficos por categoría, top de gastos e historial de movimientos.
+- Registro directo desde el dashboard: abre el formulario de nuevo movimiento para crear gastos, ingresos o transferencias sin entrar a una categoría.
 - Bot de Telegram: se vincula a tu cuenta, entiende mensajes con IA (Groq), pregunta con botones lo que falte y permite deshacer un registro.
 
 ## Tecnologías

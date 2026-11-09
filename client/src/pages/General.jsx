@@ -13,6 +13,7 @@ import '../styles/dashboard.css';
 import EtiquetaCuenta, { EtiquetasTransferencia } from '../components/EtiquetaCuenta';
 import EtiquetaCategoria from '../components/EtiquetaCategoria';
 import SelectorMes from '../components/SelectorMes';
+import NuevoMovimientoModal from '../components/NuevoMovimientoModal';
 import { useCategorias } from '../context/useCategorias';
 
 
@@ -98,6 +99,8 @@ export default function General() {
   const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
     let activo = true;
@@ -131,7 +134,7 @@ export default function General() {
       activo = false;
       window.removeEventListener('focus', recargarAlVolver);
     };
-  }, [mes, categorias]);
+  }, [mes, categorias, recarga]);
 
   if (cargando && !resumen) {
     return (
@@ -156,7 +159,12 @@ export default function General() {
           <h1>General</h1>
           <p>Resumen de tus movimientos</p>
         </div>
-        <SelectorMes mes={mes} mesMaximo={mesActual} onCambiar={setMes} />
+        <div className="dashboard-acciones">
+          <button className="boton boton-primario" onClick={() => setModalAbierto(true)}>
+            ＋ Nuevo movimiento
+          </button>
+          <SelectorMes mes={mes} mesMaximo={mesActual} onCambiar={setMes} />
+        </div>
       </div>
 
       {error && <p className="mensaje-error">{error}</p>}
@@ -501,6 +509,13 @@ export default function General() {
           </div>
         </div>
       </div>
+
+      {modalAbierto && (
+        <NuevoMovimientoModal
+          onCerrar={() => setModalAbierto(false)}
+          onGuardado={() => setRecarga((n) => n + 1)}
+        />
+      )}
     </div>
   );
 }
