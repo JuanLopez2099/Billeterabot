@@ -1,6 +1,7 @@
 const supabase = require('../config/supabaseClient');
 const { errorValidacion } = require('../utils/errores');
 const { fechaDeHoy, esFechaValida } = require('../utils/fechas');
+const cuentaService = require('./cuentaService');
 
 const CAMPOS = 'id, monto, descripcion, fecha, creado_en, cuenta:cuentas(id, nombre), categoria:categorias(id, nombre)';
 
@@ -31,7 +32,8 @@ async function crearGasto(usuarioId, { monto, cuentaId, categoriaId, descripcion
   if (!cuentaId) {
     throw errorValidacion('La cuenta es obligatoria');
   }
-
+  
+  await cuentaService.exigirCuentaAccesible(usuarioId, cuentaId);
 
   const categoriaFinal = categoriaId || null;
   if (categoriaFinal) {
@@ -96,6 +98,9 @@ async function editarGasto(usuarioId, gastoId, { monto, cuentaId, categoriaId, d
     throw errorValidacion('La cuenta es obligatoria');
   }
 
+  await cuentaService.exigirCuentaAccesible(usuarioId, cuentaId);
+
+  
   const categoriaFinal = categoriaId || null;
   if (categoriaFinal) {
     const esDelUsuario = await categoriaPerteneceAlUsuario(usuarioId, categoriaFinal);

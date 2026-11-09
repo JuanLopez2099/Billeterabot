@@ -1,4 +1,4 @@
-// client/src/components/Sidebar.jsx
+
 import { useState } from 'react';
 import { useCategorias } from '../context/useCategorias';
 import CategoriaCampos from './CategoriaCampos';
@@ -9,6 +9,7 @@ import iconoIngresos from '../assets/iconos/ingresos.svg';
 import { IconoEditar, IconoEliminar } from './IconosAccion';
 import { useEffect} from 'react';
 import iconoSinCategoria from '../assets/iconos/sin-categoria.svg';
+import iconoCuentas from '../assets/iconos/cuentas.svg';
 
 const CATEGORIA_VACIA = { nombre: '', color: '#7a7a6e', icono: 'otros' };
 
@@ -104,7 +105,13 @@ export default function Sidebar({ pantalla, onCambiar }) {
         <img src={iconoIngresos} alt="" className="sidebar-icon" />
         Ingresos
       </button>
-
+      <button
+        className={`sidebar-item ${pantalla === 'cuentas' ? 'sidebar-item--activo' : ''}`}
+        onClick={() => onCambiar('cuentas')}
+      >
+        <img src={iconoCuentas} alt="" className="sidebar-icon" />
+        Cuentas
+      </button>
       <div className="sidebar-separador" />
 
       {categorias.map((c) => {

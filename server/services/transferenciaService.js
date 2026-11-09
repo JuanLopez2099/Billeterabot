@@ -1,6 +1,7 @@
 const supabase = require('../config/supabaseClient');
 const { errorValidacion } = require('../utils/errores');
 const { fechaDeHoy, esFechaValida } = require('../utils/fechas');
+const cuentaService = require('./cuentaService');
 
 
 async function crearTransferencia(usuarioId, { monto, cuentaOrigenId, cuentaDestinoId, fecha }) {
@@ -16,6 +17,9 @@ async function crearTransferencia(usuarioId, { monto, cuentaOrigenId, cuentaDest
   if (cuentaOrigenId === cuentaDestinoId) {
     throw errorValidacion('La cuenta de origen y la de destino deben ser diferentes');
   }
+
+  await cuentaService.exigirCuentaAccesible(usuarioId, cuentaOrigenId, 'Alguna de las cuentas indicadas no existe');
+  await cuentaService.exigirCuentaAccesible(usuarioId, cuentaDestinoId, 'Alguna de las cuentas indicadas no existe');
 
   const fechaFinal = fecha || fechaDeHoy();
   if (!esFechaValida(fechaFinal)) {
@@ -82,6 +86,9 @@ async function editarTransferencia(usuarioId, transferenciaId, { monto, cuentaOr
   if (cuentaOrigenId === cuentaDestinoId) {
     throw errorValidacion('La cuenta de origen y la de destino deben ser diferentes');
   }
+
+  await cuentaService.exigirCuentaAccesible(usuarioId, cuentaOrigenId, 'Alguna de las cuentas indicadas no existe');
+  await cuentaService.exigirCuentaAccesible(usuarioId, cuentaDestinoId, 'Alguna de las cuentas indicadas no existe');
 
   const fechaFinal = fecha || fechaDeHoy();
   if (!esFechaValida(fechaFinal)) {

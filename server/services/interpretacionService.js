@@ -12,6 +12,8 @@ function buscarCuenta(nombreMencionado, cuentas) {
     cuentas.find((c) => normalizar(c.nombre) === buscado) ||
     cuentas.find((c) => {
       const real = normalizar(c.nombre);
+      // La coincidencia parcial solo se usa si ambos nombres tienen 3 letras o más.
+      if (real.length < 3 || buscado.length < 3) return false;
       return real.includes(buscado) || buscado.includes(real);
     }) ||
     null
@@ -26,7 +28,7 @@ function buscarCategoria(nombreMencionado, categorias) {
 
 async function interpretar(usuarioId, texto) {
   const [cuentas, categorias] = await Promise.all([
-    cuentaService.listarCuentas(),
+    cuentaService.listarCuentas(usuarioId),
     categoriaService.listarCategorias(usuarioId),
   ]);
 
