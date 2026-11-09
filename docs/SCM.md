@@ -1,6 +1,6 @@
 # SCM - Billeterabot
 
-Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.1 - Actualizado: 2026-11-08
+Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.2 - Actualizado: 2026-11-09
 
 ## 1. Ítems de configuración
 
@@ -32,11 +32,13 @@ Ejemplo: "función para eliminar un gasto"
 
 ## 3. Versionado y líneas base
 
-Versionado semántico `MAJOR.MINOR.PATCH`: PATCH corrige un error, MINOR agrega o mejora algo de forma compatible y MAJOR rompe la compatibilidad. Cada línea base es una etiqueta `vX.Y.Z` sobre master, y su contenido queda registrado en `CHANGELOG.md`.
+Versionado semántico `MAJOR.MINOR.PATCH`: PATCH corrige un error, MINOR agrega o mejora algo de forma compatible y MAJOR rompe la compatibilidad. Cada línea base es una etiqueta `X.Y.Z` sobre master, y su contenido queda registrado en `CHANGELOG.md`.
 
 | Línea base | Contenido | Aprobó | Fecha |
 |---|---|---|---|
-| v1.0.0 | Primera versión: autenticación con Google y correo, gastos con categorías, ingresos, transferencias, dashboard y bot de Telegram | Desarrollador principal. | 2026-10-07 |
+| 1.0.0 | Primera versión: autenticación con Google y correo, gastos con categorías, ingresos, transferencias, dashboard y bot de Telegram | Desarrollador principal | 2026-10-07 |
+| 1.1.0 | Cuentas propias con nombre y color, junto con las cuentas predefinidas | Desarrollador principal | 2026-11-08 |
+| 1.2.0 | Registro de gastos, ingresos y transferencias directamente desde el dashboard | Desarrollador principal | 2026-11-09 |
 
 ## 4. Control de cambios
 
@@ -50,7 +52,7 @@ Flujo: solicitud (issue de GitHub) → ficha en este documento → decisión (de
 | Impacto | O 1 h · M 2 h · P 4 h → E ≈ 2,2 h (de 1,7 a 2,7 h) ≈ COP 18.100 (de 13.900 a 22.200) |
 | Riesgo | Preguntas pendientes que se pueden pisar |
 | Decisión | Aprobada: el usuario no escribe nombres de cuentas y puede corregir un registro hecho por error |
-| Nueva linea base | v1.0.0 |
+| Nueva linea base | 1.0.0 |
 
 ### CR-002 Cuentas propias
 
@@ -60,13 +62,23 @@ Flujo: solicitud (issue de GitHub) → ficha en este documento → decisión (de
 | Impacto | Permite crear cuentas propias con nombre y color, junto con las predefinidas. Las propias pueden eliminarse cuando no tienen movimientos |
 | Riesgo | Eliminar una cuenta con movimientos podría afectar el historial; el servicio bloquea esa eliminación |
 | Decisión | Aprobada: cada usuario puede gestionar cuentas propias y seguir utilizando las cuentas predefinidas |
-| Nueva linea base | v1.1.0 |
+| Nueva linea base | 1.1.0 |
+
+### CR-003 Registro de movimientos desde el dashboard
+
+| Campo | Respuesta |
+|---|---|
+| Ítems afectados | `client/src/pages/General.jsx`, nuevo componente `NuevoMovimientoModal.jsx` y estilos del dashboard y movimientos; servicios existentes de gastos, ingresos y transferencias |
+| Impacto | Permite iniciar desde el dashboard el registro de gastos, ingresos y transferencias, sin tener que entrar a una categoría |
+| Riesgo | Datos incompletos o selección incorrecta de cuenta/categoría; el formulario exige los campos requeridos y conserva la validación de los servicios existentes |
+| Decisión | Aprobada: acceso directo al formulario unificado desde el dashboard |
+| Nueva linea base | 1.2.0 |
 
 ## 5. Ambiente y estado
 
 | Ambiente | Rama | Versión | Estado |
 |---|---|---|---|
-| Desarrollo | Develop | 1.0.0 | Ajustes para la versión en móvil pendientes. |
-| Producción | Master | v1.0.0 | Desplegado y estable |
+| Desarrollo | Develop | 1.2.0 | Cambio validado manualmente en `feature/boton-nuevo-movimiento`; pendiente de integrar en Develop |
+| Producción | Master | 1.1.0 | Desplegado y estable |
 
 Volver atrás: como master se despliega solo, revertir el merge con un pull request vuelve a desplegar la versión anterior. También se puede restaurar un despliegue previo desde el panel de Vercel y de Railway.
