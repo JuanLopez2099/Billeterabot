@@ -1,6 +1,6 @@
 # Changelog
 
-## Próxima versión — v1.1.0
+## 1.1.0
 
 ### Agregado
 - Cuentas propias con nombre y color, junto con las cuentas predefinidas. Las cuentas propias solo pueden eliminarse si no tienen movimientos.
