@@ -1,6 +1,7 @@
 const supabase = require('../config/supabaseClient');
 const { errorValidacion } = require('../utils/errores');
 const { fechaDeHoy, esFechaValida } = require('../utils/fechas');
+const cuentaService = require('./cuentaService');
 
 async function crearIngreso(usuarioId, { monto, cuentaId, descripcion, fecha }) {
   const montoNum = Number(monto);
@@ -11,6 +12,8 @@ async function crearIngreso(usuarioId, { monto, cuentaId, descripcion, fecha }) 
   if (!cuentaId) {
     throw errorValidacion('La cuenta es obligatoria');
   }
+
+  await cuentaService.exigirCuentaAccesible(usuarioId, cuentaId);
 
   const fechaFinal = fecha || fechaDeHoy();
 
@@ -67,6 +70,8 @@ async function editarIngreso(usuarioId, ingresoId, { monto, cuentaId, descripcio
   if (!cuentaId) {
     throw errorValidacion('La cuenta es obligatoria');
   }
+
+  await cuentaService.exigirCuentaAccesible(usuarioId, cuentaId);
 
   const fechaFinal = fecha || fechaDeHoy();
 

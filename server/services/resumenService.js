@@ -87,7 +87,7 @@ async function calcularResumen(usuarioId, mesPedido) {
       .gte('fecha', `${mes}-01`)
       .lte('fecha', fin),
     supabase.from('transferencias').select('monto, cuenta_origen_id, cuenta_destino_id').eq('usuario_id', usuarioId),
-    supabase.from('cuentas').select('id, nombre'),
+    supabase.from('cuentas').select('id, nombre').or(`usuario_id.is.null,usuario_id.eq.${usuarioId}`),
   ]);
 
   for (const resultado of [

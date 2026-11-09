@@ -1,6 +1,6 @@
 # SCM - Billeterabot
 
-Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.0 - Actualizado: 2026-10-07
+Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.1 - Actualizado: 2026-11-08
 
 ## 1. Ítems de configuración
 
@@ -9,7 +9,7 @@ Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.0 - Actualizado: 
 | Frontend (React + Vite) | `client/` | Componentes y páginas en PascalCase, servicios en minúscula |
 | Backend (Node + Express + bot de Telegram) | `server/` (`bot/`, `routes/`, `services/`) | un servicio por módulo. Ej: `gastosService.js` |
 | Historias de usuario | Issues y tablero de github | `Hu<>` / `HU001` a `HU0025` |
-| Documentación | `README.md`, `docs/`, `SCM.md`, `CHANGELOG.md` | nombre fijo |
+| Documentación | `README.md`, `docs/`, `CHANGELOG.md` | nombre fijo |
 
 No se versiona: `.env` y `node_modules/`, están en `.gitignore`. Los secretos viven en las variables de entorno donde se despliega el proyecto, railway para el backend contiene: `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`. y vercel para el frontend: `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
 
@@ -51,6 +51,16 @@ Flujo: solicitud (issue de GitHub) → ficha en este documento → decisión (de
 | Riesgo | Preguntas pendientes que se pueden pisar |
 | Decisión | Aprobada: el usuario no escribe nombres de cuentas y puede corregir un registro hecho por error |
 | Nueva linea base | v1.0.0 |
+
+### CR-002 Cuentas propias
+
+| Campo | Respuesta |
+|---|---|
+| Ítems afectados | Tabla `cuentas` y `usuario_id`; página y contexto de cuentas; rutas y servicios de cuentas y movimientos |
+| Impacto | Permite crear cuentas propias con nombre y color, junto con las predefinidas. Las propias pueden eliminarse cuando no tienen movimientos |
+| Riesgo | Eliminar una cuenta con movimientos podría afectar el historial; el servicio bloquea esa eliminación |
+| Decisión | Aprobada: cada usuario puede gestionar cuentas propias y seguir utilizando las cuentas predefinidas |
+| Nueva linea base | v1.1.0 |
 
 ## 5. Ambiente y estado
 

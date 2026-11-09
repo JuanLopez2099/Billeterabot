@@ -14,6 +14,8 @@ import './styles/dashboard.css';
 import GastosCategoria from './pages/GastosCategoria';
 import Ingresos from './pages/Ingresos';
 import SinCategoriaGastos from './pages/SinCategoriaGastos';
+import { CuentasProvider } from './context/CuentasProvider';
+import Cuentas from './pages/Cuentas';
 
 function App() {
   const { user, loading, signOut, recoveryMode, nombre, sincronizado } = useAuth();
@@ -31,27 +33,30 @@ function App() {
   if (user) {
     return (
       <CategoriasProvider>
-        <div>
-          <Topbar nombre={nombre} onCerrarSesion={signOut} />
-          <div className="layout-con-sidebar">
-            <Sidebar pantalla={pantalla} onCambiar={setPantalla} />
-            <div style={{ flex: 1 }}>
-              {pantalla === 'general' && <General />}
-              {pantalla === 'ingresos' && <Ingresos />}
-              {pantalla === 'transferencias' && <Transferencias />}
-              {pantalla.startsWith('categoria:') && (
-                <GastosCategoria
-                  key={pantalla}
-                  categoriaId={pantalla.split(':')[1]}
-                  onCambiarPantalla={setPantalla}
-                />
-              )}
-              {pantalla === 'sin-categoria' && (
-                <SinCategoriaGastos onCambiarPantalla={setPantalla} />
-              )}
+        <CuentasProvider>
+          <div>
+            <Topbar nombre={nombre} onCerrarSesion={signOut} />
+            <div className="layout-con-sidebar">
+              <Sidebar pantalla={pantalla} onCambiar={setPantalla} />
+              <div style={{ flex: 1 }}>
+                {pantalla === 'general' && <General />}
+                {pantalla === 'ingresos' && <Ingresos />}
+                {pantalla === 'transferencias' && <Transferencias />}
+                {pantalla === 'cuentas' && <Cuentas />}
+                {pantalla.startsWith('categoria:') && (
+                  <GastosCategoria
+                    key={pantalla}
+                    categoriaId={pantalla.split(':')[1]}
+                    onCambiarPantalla={setPantalla}
+                  />
+                )}
+                {pantalla === 'sin-categoria' && (
+                  <SinCategoriaGastos onCambiarPantalla={setPantalla} />
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </CuentasProvider>
       </CategoriasProvider>
     );
   }

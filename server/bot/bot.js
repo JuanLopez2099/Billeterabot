@@ -62,23 +62,24 @@ function crearBot(token, opciones = {}) {
         const texto = resultado.motivo === 'chat_ocupado' ? mensajes.chatOcupado : mensajes.codigoInvalido;
         return ctx.reply(texto, HTML);
       }
-      const [usuario, cuentas] = await Promise.all([
-        telegramService.usuarioPorChat(ctx.chat.id),
-        cuentaService.listarCuentas(),
-      ]);
+      const usuario = await telegramService.usuarioPorChat(ctx.chat.id);
+      const cuentas = usuario ? await cuentaService.listarCuentas(usuario.id) : [];
       return ctx.reply(mensajes.vinculado(usuario?.nombre, cuentas), HTML);
     }
 
     const usuario = await telegramService.usuarioPorChat(ctx.chat.id);
     if (!usuario) return ctx.reply(mensajes.sinVincular(), HTML);
 
-    const cuentas = await cuentaService.listarCuentas();
+    const cuentas = await cuentaService.listarCuentas(usuario.id);
     return ctx.reply(mensajes.bienvenidaDeNuevo(usuario.nombre, cuentas), HTML);
   });
 
 
   bot.command('ayuda', async (ctx) => {
-    const cuentas = await cuentaService.listarCuentas();
+    const usuario = await telegramService.usuarioPorChat(ctx.chat.id);
+    if (!usuario) return ctx.reply(mensajes.sinVincular(), HTML);
+
+    const cuentas = await cuentaService.listarCuentas(usuario.id);
     return ctx.reply(mensajes.formatos(cuentas), HTML);
   });
 
