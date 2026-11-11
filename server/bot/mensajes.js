@@ -13,20 +13,13 @@ function listaDeCuentas(cuentas) {
 
 function formatos(cuentas) {
   return (
-    `📝 <b>Cómo escribirme tus movimientos</b>\n` +
-    `Te sugerimos estos formatos:\n\n` +
-    `💸 <b>Gastos</b>\n` +
-    `Gasté "monto" en "descripción" con "cuenta"\n` +
-    `<i>Ejemplo:</i> <code>Gasté 15000 en cena con Nequi</code>\n\n` +
-    `💰 <b>Ingresos</b>\n` +
-    `Recibí "monto" de "descripción" en "cuenta"\n` +
-    `<i>Ejemplo:</i> <code>Recibí 500000 de salario en Bancolombia</code>\n\n` +
-    `🔁 <b>Transferencias</b>\n` +
-    `Transferí "monto" de "cuenta_origen" a "cuenta_destino"\n` +
-    `<i>Ejemplo:</i> <code>Transferí 50000 de Nequi a Bancolombia</code>\n\n` +
-    `💡 El monto puede ser 15000, 15.000 o "15 mil". ` +
-    `La categoría la deduzco de la descripción; si no puedo, te pregunto. ` +
-    `Y si me falta algún dato, también te lo pregunto.\n` +
+    `📝 <b>Escríbeme como hablas</b>\n` +
+    `Cuéntame tus movimientos con tus palabras y yo me encargo del resto:\n\n` +
+    `💸 <code>Gasté 15000 en cena con Nequi</code>\n` +
+    `💰 <code>Me llegaron 500 mil de salario a Bancolombia</code>\n` +
+    `🔁 <code>Pasé 50000 de Nequi a Bancolombia</code>\n\n` +
+    `💡 El monto puede ir como 15000, 15.000 o "15 mil". ` +
+    `Si me falta algún dato, te lo pregunto y puedes responder con un botón o escribiéndolo.\n` +
     `📅 <i>Ojo: por ahora solo registro movimientos de hoy; para otra fecha, usa la página.</i>` +
     `${listaDeCuentas(cuentas)}\n\n` +
     `Escribe /ayuda cuando quieras ver esto otra vez.`
@@ -90,11 +83,56 @@ function movimientoRegistrado(resultado) {
 
 function noEntendido(detalle) {
   if (detalle) return `🤔 ${escapar(detalle)}`;
-  return `🤔 No logré entender ese movimiento. Escribe /ayuda para ver ejemplos.`;
+  return (
+    `🤔 No logré entender eso. Cuéntame un gasto, ingreso o transferencia, ` +
+    `por ejemplo: <code>Gasté 15000 en cena con Nequi</code>.\n` +
+    `Escribe /ayuda para ver más ejemplos.`
+  );
+}
+
+// Elige una frase al azar para que el bot no suene repetitivo.
+function alAzar(frases) {
+  return frases[Math.floor(Math.random() * frases.length)];
+}
+
+function primerNombre(nombre) {
+  return escapar(String(nombre || '').trim().split(/\s+/)[0]);
+}
+
+function saludo(nombre) {
+  const n = primerNombre(nombre);
+  const quien = n ? `, ${n}` : '';
+  return alAzar([
+    `👋 ¡Hola${quien}! ¿Qué movimiento registramos hoy?`,
+    `¡Hola${quien}! Cuéntame qué gastaste o recibiste. 💸`,
+    `👋 ¡Buenas${quien}! Dime, ¿qué anotamos?`,
+  ]);
+}
+
+function agradecimiento() {
+  return alAzar([
+    '¡Con gusto! 😊',
+    '¡De nada! Aquí estoy cuando quieras anotar algo más.',
+    '¡Listo! 👍',
+  ]);
+}
+
+const cancelado = '🚫 Listo, no registré nada.';
+
+
+function recordatorioPregunta(fase) {
+  const pide = {
+    monto: 'el monto (por ejemplo <code>20000</code> o <code>20 mil</code>)',
+    cuenta: 'la cuenta (toca un botón o escribe su nombre)',
+    cuentaDestino: 'la cuenta de destino (toca un botón o escribe su nombre)',
+    categoria: 'la categoría (toca un botón o escribe su nombre)',
+  }[fase] || 'ese dato';
+  return `🤔 No te entendí. Sigo esperando ${pide}.\nSi prefieres dejarlo, escribe <b>cancela</b>.`;
 }
 
 module.exports = {
   escapar,
+  formatoPesos,
   formatos,
   vinculado,
   bienvenidaDeNuevo,
@@ -105,4 +143,8 @@ module.exports = {
   proximamente,
   movimientoRegistrado,
   noEntendido,
+  saludo,
+  agradecimiento,
+  cancelado,
+  recordatorioPregunta,
 };

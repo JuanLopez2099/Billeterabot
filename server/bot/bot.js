@@ -87,7 +87,7 @@ function crearBot(token, opciones = {}) {
   bot.on('message:text', async (ctx) => {
     const usuario = await telegramService.usuarioPorChat(ctx.chat.id);
     if (!usuario) return ctx.reply(mensajes.sinVincular(), HTML);
-    return flujoMovimiento.procesarTexto(ctx, usuario.id, ctx.message.text);
+    return flujoMovimiento.procesarTexto(ctx, usuario.id, ctx.message.text, usuario.nombre);
   });
 
   bot.on('callback_query:data', (ctx) => flujoMovimiento.manejarBoton(ctx));

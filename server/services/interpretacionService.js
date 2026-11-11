@@ -1,9 +1,9 @@
-// server/services/interpretacionService.js
 const { normalizar } = require('../utils/texto');
 const { fechaDeHoy } = require('../utils/fechas');
 const cuentaService = require('./cuentaService');
 const categoriaService = require('./categoriaService');
 const groqService = require('./groqService');
+
 
 function buscarCuenta(nombreMencionado, cuentas) {
   if (!nombreMencionado) return null;
@@ -34,19 +34,21 @@ async function interpretar(usuarioId, texto) {
 
   const interpretado = await groqService.interpretarMensaje(texto, { cuentas, categorias });
 
-  if (interpretado.tipo === 'desconocido') {
-    return { reconocido: false };
+
+  if (interpretado.intencion !== 'registrar' || interpretado.tipo === 'ninguno') {
+    const intencion = interpretado.intencion === 'registrar' ? 'desconocido' : interpretado.intencion;
+    return { reconocido: false, intencion, cuentasDisponibles: cuentas };
   }
 
+  // El monto puede faltar: en ese caso el bot se lo pregunta al usuario.
   const montoNum = Math.round(Number(interpretado.monto));
-  if (!Number.isFinite(montoNum) || montoNum <= 0) {
-    return { reconocido: false };
-  }
+  const monto = Number.isFinite(montoNum) && montoNum > 0 ? montoNum : null;
 
   return {
     reconocido: true,
+    intencion: 'registrar',
     tipo: interpretado.tipo,
-    monto: montoNum,
+    monto,
     descripcion: interpretado.descripcion || null,
     fecha: fechaDeHoy(),
     cuenta: buscarCuenta(interpretado.cuenta, cuentas),
