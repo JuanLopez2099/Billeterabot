@@ -25,10 +25,45 @@ function numeroDesdeTexto(token) {
   return null;
 }
 
+const UNIDADES = {
+  cero: 0, un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9,
+  diez: 10, once: 11, doce: 12, trece: 13, catorce: 14, quince: 15, dieciseis: 16, diecisiete: 17,
+  dieciocho: 18, diecinueve: 19, veinte: 20, veintiun: 21, veintiuno: 21, veintidos: 22, veintitres: 23,
+  veinticuatro: 24, veinticinco: 25, veintiseis: 26, veintisiete: 27, veintiocho: 28, veintinueve: 29,
+  treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60, setenta: 70, ochenta: 80, noventa: 90,
+  cien: 100, ciento: 100, doscientos: 200, trescientos: 300, cuatrocientos: 400, quinientos: 500,
+  seiscientos: 600, setecientos: 700, ochocientos: 800, novecientos: 900,
+};
+
+function montoDesdePalabras(texto) {
+  const palabras = limpiar(texto).split(' ').filter((p) => p && !['y', 'pesos', 'cop'].includes(p));
+  if (palabras.length === 0) return null;
+
+  let total = 0;
+  let actual = 0;
+
+  for (const palabra of palabras) {
+    if (palabra === 'mil') {
+      total += (actual || 1) * 1000;
+      actual = 0;
+    } else if (palabra === 'millon' || palabra === 'millones') {
+      total += (actual || 1) * 1_000_000;
+      actual = 0;
+    } else if (Object.hasOwn(UNIDADES, palabra)) {
+      actual += UNIDADES[palabra];
+    } else {
+      return null;
+    }
+  }
+
+  total += actual;
+  return total > 0 ? total : null;
+}
+
 function extraerMonto(texto) {
   const limpio = normalizar(String(texto)).replace(/\s+/g, ' ').replace(/^\$\s*/, '');
   const coincidencia = limpio.match(/^(\d[\d.,]*)\s*(mil|k|millon|millones)?\s*(pesos|cop)?$/);
-  if (!coincidencia) return null;
+  if (!coincidencia) return montoDesdePalabras(texto);
 
   const base = numeroDesdeTexto(coincidencia[1]);
   if (base === null) return null;
@@ -63,9 +98,17 @@ function elegirOpcion(texto, opciones) {
   if (buscado.length >= 3) {
     const empiezan = opciones.filter((o) => limpiar(o.nombre).startsWith(buscado));
     if (empiezan.length === 1) return empiezan[0];
+
+    const porPalabra = opciones.filter((o) => limpiar(o.nombre).split(' ').includes(buscado));
+    if (porPalabra.length === 1) return porPalabra[0];
   }
 
   return null;
+}
+
+function coincideNombreExacto(texto, opciones) {
+  const buscado = limpiar(texto);
+  return Boolean(buscado) && (opciones || []).some((o) => limpiar(o.nombre) === buscado);
 }
 
 const SIN_CATEGORIA = new Set(['sin categoria', 'ninguna', 'ninguno', 'ninguna categoria', 'sin']);
@@ -111,6 +154,7 @@ module.exports = {
   extraerMonto,
   contieneMonto,
   elegirOpcion,
+  coincideNombreExacto,
   esSinCategoria,
   esCancelacion,
   esAfirmacion,

@@ -523,7 +523,8 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
     pendiente.monto = monto;
     confirmacion = `✅ Monto: ${mensajes.formatoPesos(monto)}`;
   } else {
-    if (conversacion.contieneMonto(texto)) return false;
+    const opciones = pendiente.fase === 'categoria' ? pendiente.categoriasDisponibles : cuentasParaFase(pendiente);
+    if (conversacion.contieneMonto(texto) && !conversacion.coincideNombreExacto(texto, opciones)) return false;
 
     if (pendiente.fase === 'categoria') {
       if (conversacion.esSinCategoria(texto)) {
@@ -547,6 +548,48 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
   return true;
 }
 
+async function crearPorPedido(ctx, usuarioId, r) {
+  const esCuenta = r.intencion === 'crear_cuenta';
+  const clase = esCuenta ? 'cuenta' : 'categoría';
+  const nombre = conversacion.capitalizar(r.nombre);
+
+  if (!nombre) return ctx.reply(mensajes.faltaNombre(clase), HTML);
+
+  const existentes = esCuenta ? r.cuentasDisponibles : r.categoriasDisponibles;
+  const repetida = existentes.find((e) => conversacion.limpiar(e.nombre) === conversacion.limpiar(nombre));
+  if (repetida) return ctx.reply(mensajes.yaExiste(clase, repetida.nombre), HTML);
+
+  const activo = pendienteActivo(ctx.chat.id);
+  const pendiente =
+    activo && activo.pendiente.usuarioId === usuarioId && activo.pendiente.modo === 'registro'
+      ? activo.pendiente
+      : null;
+
+  let fase = null;
+  if (pendiente && esCuenta && pendiente.fase === 'cuenta') fase = 'crearCuenta';
+  if (pendiente && esCuenta && pendiente.fase === 'cuentaDestino') fase = 'crearCuentaDestino';
+  if (pendiente && !esCuenta && pendiente.fase === 'categoria') fase = 'crearCategoria';
+
+  try {
+    if (fase) {
+      const entidad = await crearEntidad(pendiente, fase, nombre);
+      aplicarEntidadCreada(pendiente, fase, entidad);
+      await actualizarMensajePregunta(ctx, pendiente, mensajes.entidadCreada(clase, entidad.nombre));
+      return continuar(ctx, activo.preguntaId, pendiente);
+    }
+
+    const color = conversacion.elegirColor(existentes.map((e) => e.color));
+    const entidad = esCuenta
+      ? await cuentaService.crearCuenta(usuarioId, { nombre, color })
+      : await categoriaService.crearCategoria(usuarioId, { nombre, color, icono: 'otros' });
+
+    return ctx.reply(mensajes.creadaPorPedido(clase, entidad.nombre), HTML);
+  } catch (error) {
+    if (error.status) return ctx.reply(mensajes.noEntendido(error.message), HTML);
+    throw error;
+  }
+}
+
 async function responderSinMovimiento(ctx, r, nombre, usuarioId, texto) {
   if (r.intencion === 'deshacer') return deshacerUltimo(ctx, usuarioId);
 
@@ -554,6 +597,10 @@ async function responderSinMovimiento(ctx, r, nombre, usuarioId, texto) {
     const abierta = pendienteActivo(ctx.chat.id);
     if (abierta) return ctx.reply(mensajes.recordatorioPregunta(abierta.pendiente.fase), HTML);
     return corregirUltimo(ctx, usuarioId, r, texto);
+  }
+
+  if (r.intencion === 'crear_cuenta' || r.intencion === 'crear_categoria') {
+    return crearPorPedido(ctx, usuarioId, r);
   }
 
   if (r.intencion === 'saludo') return ctx.reply(mensajes.saludo(nombre), HTML);

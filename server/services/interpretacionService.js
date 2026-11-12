@@ -58,7 +58,13 @@ async function interpretar(usuarioId, texto, ultimo = null) {
 
   if (interpretado.intencion !== 'registrar' || interpretado.tipo === 'ninguno') {
     const intencion = interpretado.intencion === 'registrar' ? 'desconocido' : interpretado.intencion;
-    return { reconocido: false, intencion, cuentasDisponibles: cuentas };
+    return {
+      reconocido: false,
+      intencion,
+      nombre: interpretado.nombre || null,
+      cuentasDisponibles: cuentas,
+      categoriasDisponibles: categorias,
+    };
   }
 
   const monto = montoValido(interpretado.monto);

@@ -18,6 +18,7 @@ function formatos(cuentas) {
     `💸 <code>Gasté 15000 en cena con Nequi</code>\n` +
     `💰 <code>Me llegaron 500 mil de salario a Bancolombia</code>\n` +
     `🔁 <code>Pasé 50000 de Nequi a Bancolombia</code>\n\n` +
+    `➕ También puedo crear cuentas y categorías: <code>Crea la cuenta Binance</code> o <code>Crea la categoría Maquillaje</code>\n\n` +
     `💡 El monto puede ir como 15000, 15.000 o "15 mil". ` +
     `Si me falta algún dato, te lo pregunto y puedes responder con un botón o escribiéndolo.\n` +
     `📅 <i>Ojo: por ahora solo registro movimientos de hoy; para otra fecha, usa la página.</i>` +
@@ -167,6 +168,23 @@ function entidadCreada(clase, nombre) {
   return `✅ ${rotulo} «${escapar(nombre)}» creada.`;
 }
 
+function creadaPorPedido(clase, nombre) {
+  const uso = clase === 'cuenta'
+    ? 'Ya puedes usarla en tus movimientos.'
+    : 'Ya puedes usarla para clasificar tus gastos.';
+  return `${entidadCreada(clase, nombre)} ${uso}`;
+}
+
+function faltaNombre(clase) {
+  const ejemplo = clase === 'cuenta' ? 'Crea la cuenta Binance' : 'Crea la categoría Maquillaje';
+  return `🤔 ¿Cómo se llamará la ${clase}? Dímelo así: <code>${ejemplo}</code>.`;
+}
+
+function yaExiste(clase, nombre) {
+  const articulo = clase === 'cuenta' ? 'una cuenta' : 'una categoría';
+  return `👍 Ya tienes ${articulo} llamada <b>${escapar(nombre)}</b>, así que no hace falta crearla.`;
+}
+
 const noSeCrea = '👌 Está bien, no la creo.';
 
 const sinCambios = '👌 Listo, no cambié nada.';
@@ -194,6 +212,9 @@ module.exports = {
   movimientoDeshecho,
   proponerCrear,
   entidadCreada,
+  creadaPorPedido,
+  faltaNombre,
+  yaExiste,
   noSeCrea,
   sinCambios,
 };
