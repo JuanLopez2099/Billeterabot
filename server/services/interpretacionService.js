@@ -1,4 +1,3 @@
-// server/services/interpretacionService.js
 const { normalizar } = require('../utils/texto');
 const { fechaDeHoy } = require('../utils/fechas');
 const cuentaService = require('./cuentaService');
@@ -25,7 +24,6 @@ function buscarCategoria(nombreMencionado, categorias) {
   return categorias.find((c) => normalizar(c.nombre) === buscado) || null;
 }
 
-
 function montoValido(valor) {
   const numero = Math.round(Number(valor));
   return Number.isFinite(numero) && numero > 0 ? numero : null;
@@ -38,7 +36,6 @@ async function interpretar(usuarioId, texto, ultimo = null) {
   ]);
 
   const interpretado = await groqService.interpretarMensaje(texto, { cuentas, categorias, ultimo });
-
 
   if (interpretado.intencion === 'corregir') {
     return {
@@ -59,12 +56,10 @@ async function interpretar(usuarioId, texto, ultimo = null) {
     };
   }
 
-
   if (interpretado.intencion !== 'registrar' || interpretado.tipo === 'ninguno') {
     const intencion = interpretado.intencion === 'registrar' ? 'desconocido' : interpretado.intencion;
     return { reconocido: false, intencion, cuentasDisponibles: cuentas };
   }
-
 
   const monto = montoValido(interpretado.monto);
 
@@ -76,8 +71,11 @@ async function interpretar(usuarioId, texto, ultimo = null) {
     descripcion: interpretado.descripcion || null,
     fecha: fechaDeHoy(),
     cuenta: buscarCuenta(interpretado.cuenta, cuentas),
+    cuentaMencionada: interpretado.cuenta || null,
     cuentaDestino: interpretado.tipo === 'transferencia' ? buscarCuenta(interpretado.cuentaDestino, cuentas) : null,
+    cuentaDestinoMencionada: interpretado.tipo === 'transferencia' ? interpretado.cuentaDestino || null : null,
     categoria: interpretado.tipo === 'gasto' ? buscarCategoria(interpretado.categoria, categorias) : null,
+    categoriaMencionada: interpretado.tipo === 'gasto' ? interpretado.categoria || null : null,
     cuentasDisponibles: cuentas,
     categoriasDisponibles: categorias,
   };

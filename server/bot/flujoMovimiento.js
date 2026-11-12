@@ -5,9 +5,10 @@ const telegramService = require('../services/telegramService');
 const ingresoService = require('../services/ingresoService');
 const gastoService = require('../services/gastoService');
 const transferenciaService = require('../services/transferenciaService');
+const cuentaService = require('../services/cuentaService');
+const categoriaService = require('../services/categoriaService');
 const conversacion = require('../utils/conversacion');
 const mensajes = require('./mensajes');
-
 
 const HTML = { parse_mode: 'HTML' };
 const SIN_TECLADO = { parse_mode: 'HTML', reply_markup: { inline_keyboard: [] } };
@@ -15,14 +16,29 @@ const SIN_TECLADO = { parse_mode: 'HTML', reply_markup: { inline_keyboard: [] } 
 const LARGO_MAXIMO_MENSAJE = 300;
 const MENSAJES_POR_MINUTO = 10;
 const VENCIMIENTO_PREGUNTA_MS = 10 * 60 * 1000;
-
-
-const pendientes = new Map();             
-const preguntaActivaPorChat = new Map();  
-
-
 const VENCIMIENTO_ULTIMO_MS = 30 * 60 * 1000;
-const ultimoPorChat = new Map();          
+
+const FASES_CREACION = ['crearCuenta', 'crearCuentaDestino', 'crearCategoria'];
+const CAMPO_PROPUESTA = {
+  crearCuenta: 'propuestaCuenta',
+  crearCuentaDestino: 'propuestaCuentaDestino',
+  crearCategoria: 'propuestaCategoria',
+};
+const CLAVE_CAMBIO = {
+  crearCuenta: 'cuenta',
+  crearCuentaDestino: 'cuentaDestino',
+  crearCategoria: 'categoria',
+};
+const CLASE_ENTIDAD = {
+  crearCuenta: 'cuenta',
+  crearCuentaDestino: 'cuenta',
+  crearCategoria: 'categoría',
+};
+
+const pendientes = new Map();
+const preguntaActivaPorChat = new Map();
+const ultimoPorChat = new Map();
+const historialEnvios = new Map();
 
 function ultimoValido(chatId) {
   const ultimo = ultimoPorChat.get(chatId);
@@ -33,8 +49,6 @@ function ultimoValido(chatId) {
   }
   return ultimo;
 }
-
-const historialEnvios = new Map();
 
 function dentroDelLimite(chatId) {
   const ahora = Date.now();
@@ -60,7 +74,6 @@ function cerrarPendiente(chatId, preguntaId) {
   if (preguntaActivaPorChat.get(chatId) === preguntaId) preguntaActivaPorChat.delete(chatId);
 }
 
-
 function pendienteActivo(chatId) {
   const preguntaId = preguntaActivaPorChat.get(chatId);
   if (!preguntaId) return null;
@@ -72,23 +85,19 @@ function pendienteActivo(chatId) {
   return { preguntaId, pendiente };
 }
 
-
 async function actualizarMensajePregunta(ctx, pendiente, texto) {
   if (!pendiente.mensajeId) return;
   try {
     await ctx.api.editMessageText(ctx.chat.id, pendiente.mensajeId, texto, SIN_TECLADO);
   } catch {
-
   }
 }
-
 
 async function quitarBotones(ctx, mensajeId) {
   if (!mensajeId) return;
   try {
     await ctx.api.editMessageReplyMarkup(ctx.chat.id, mensajeId, { reply_markup: { inline_keyboard: [] } });
   } catch {
-
   }
 }
 
@@ -98,7 +107,6 @@ async function descartarPreguntaActiva(ctx) {
   cerrarPendiente(ctx.chat.id, activo.preguntaId);
   await actualizarMensajePregunta(ctx, activo.pendiente, '↪️ Pregunta descartada.');
 }
-
 
 function tecladoCuentas(preguntaId, cuentas) {
   const teclado = new InlineKeyboard();
@@ -119,13 +127,18 @@ function tecladoCategorias(preguntaId, categorias) {
   return teclado;
 }
 
+function tecladoCrear(preguntaId) {
+  return new InlineKeyboard()
+    .text('✅ Sí, créala', `crear:${preguntaId}:si`)
+    .text('No', `crear:${preguntaId}:no`);
+}
+
 function cuentasParaFase(pendiente) {
   if (pendiente.fase === 'cuentaDestino') {
     return pendiente.cuentasDisponibles.filter((c) => c.id !== pendiente.cuentaId);
   }
   return pendiente.cuentasDisponibles;
 }
-
 
 function aplicarCuenta(pendiente, cuenta) {
   if (pendiente.fase === 'cuentaDestino') {
@@ -146,7 +159,6 @@ function aplicarCategoria(pendiente, categoria) {
   pendiente.categoriaId = categoria ? categoria.id : null;
   pendiente.categoriaNombre = categoria ? categoria.nombre : null;
 }
-
 
 async function guardarYResponder(ctx, pendiente) {
   const { usuarioId, tipo, monto, descripcion, fecha, cuentaId, cuentaDestinoId, categoriaId } = pendiente;
@@ -175,7 +187,6 @@ async function guardarYResponder(ctx, pendiente) {
   const teclado = new InlineKeyboard().text('↩️ Deshacer', `deshacer:${tipo}:${registro.id}`);
   const enviado = await ctx.reply(resumen, { ...HTML, reply_markup: teclado });
 
-
   ultimoPorChat.set(ctx.chat.id, {
     id: registro.id,
     tipo,
@@ -193,13 +204,11 @@ async function guardarYResponder(ctx, pendiente) {
   });
 }
 
-
 async function eliminarMovimiento(usuarioId, tipo, id) {
   if (tipo === 'gasto') return gastoService.eliminarGasto(usuarioId, id);
   if (tipo === 'ingreso') return ingresoService.eliminarIngreso(usuarioId, id);
   return transferenciaService.eliminarTransferencia(usuarioId, id);
 }
-
 
 async function editarMovimiento(usuarioId, m) {
   if (m.tipo === 'transferencia') {
@@ -216,7 +225,6 @@ async function editarMovimiento(usuarioId, m) {
     monto: m.monto, cuentaId: m.cuentaId, categoriaId: m.categoriaId, descripcion: m.descripcion, fecha: m.fecha,
   });
 }
-
 
 async function deshacerUltimo(ctx, usuarioId) {
   const activo = pendienteActivo(ctx.chat.id);
@@ -244,21 +252,13 @@ async function deshacerUltimo(ctx, usuarioId) {
   return ctx.reply(mensajes.movimientoDeshecho(ultimo), HTML);
 }
 
-async function corregirUltimo(ctx, usuarioId, cambios, texto) {
+async function aplicarCorreccion(ctx, usuarioId, cambios, texto) {
   const ultimo = ultimoValido(ctx.chat.id);
   if (!ultimo) return ctx.reply(mensajes.sinMovimientoReciente, HTML);
 
-
-  if (cambios.cuentaMencionada && !cambios.cuenta) {
-    return ctx.reply(mensajes.noExiste('cuenta', cambios.cuentaMencionada), HTML);
+  if ((cambios.categoria || cambios.categoriaMencionada) && ultimo.tipo !== 'gasto') {
+    return ctx.reply(mensajes.sinCategoria(ultimo.tipo), HTML);
   }
-  if (cambios.cuentaDestinoMencionada && !cambios.cuentaDestino && ultimo.tipo === 'transferencia') {
-    return ctx.reply(mensajes.noExiste('cuenta', cambios.cuentaDestinoMencionada), HTML);
-  }
-  if (cambios.categoriaMencionada && !cambios.categoria) {
-    return ctx.reply(mensajes.noExiste('categoría', cambios.categoriaMencionada), HTML);
-  }
-
 
   const nuevo = { ...ultimo };
   let huboCambio = false;
@@ -278,12 +278,10 @@ async function corregirUltimo(ctx, usuarioId, cambios, texto) {
     huboCambio = true;
   }
   if (cambios.categoria) {
-    if (ultimo.tipo !== 'gasto') return ctx.reply(mensajes.sinCategoria(ultimo.tipo), HTML);
     nuevo.categoriaId = cambios.categoria.id;
     nuevo.categoriaNombre = cambios.categoria.nombre;
     huboCambio = true;
   }
-  // La descripción solo se cambia si el usuario la nombra, para que la IA no la pise por error.
   const pideDescripcion = /descrip|concepto|nota/.test(conversacion.limpiar(texto));
   if (cambios.descripcion && pideDescripcion && ultimo.tipo !== 'transferencia') {
     nuevo.descripcion = cambios.descripcion;
@@ -315,10 +313,104 @@ async function corregirUltimo(ctx, usuarioId, cambios, texto) {
   ultimoPorChat.set(ctx.chat.id, { ...nuevo, mensajeId: enviado.message_id, creadoEn: Date.now() });
 }
 
+async function corregirUltimo(ctx, usuarioId, r, texto) {
+  const ultimo = ultimoValido(ctx.chat.id);
+  if (!ultimo) return ctx.reply(mensajes.sinMovimientoReciente, HTML);
+
+  const { cambios } = r;
+  const pendiente = {
+    modo: 'correccion',
+    usuarioId,
+    creadoEn: Date.now(),
+    texto,
+    cambios: { ...cambios },
+    propuestaCuenta: cambios.cuentaMencionada && !cambios.cuenta ? cambios.cuentaMencionada : null,
+    propuestaCuentaDestino:
+      ultimo.tipo === 'transferencia' && cambios.cuentaDestinoMencionada && !cambios.cuentaDestino
+        ? cambios.cuentaDestinoMencionada
+        : null,
+    propuestaCategoria:
+      ultimo.tipo === 'gasto' && cambios.categoriaMencionada && !cambios.categoria
+        ? cambios.categoriaMencionada
+        : null,
+    cuentasDisponibles: r.cuentasDisponibles,
+    categoriasDisponibles: r.categoriasDisponibles,
+  };
+
+  const preguntaId = crypto.randomBytes(4).toString('hex');
+  return continuar(ctx, preguntaId, pendiente);
+}
+
+async function crearEntidad(pendiente, fase, nombre) {
+  if (fase === 'crearCategoria') {
+    const categoria = await categoriaService.crearCategoria(pendiente.usuarioId, {
+      nombre,
+      color: conversacion.elegirColor(pendiente.categoriasDisponibles.map((c) => c.color)),
+      icono: 'otros',
+    });
+    pendiente.categoriasDisponibles.push(categoria);
+    return categoria;
+  }
+
+  const cuenta = await cuentaService.crearCuenta(pendiente.usuarioId, {
+    nombre,
+    color: conversacion.elegirColor(pendiente.cuentasDisponibles.map((c) => c.color)),
+  });
+  pendiente.cuentasDisponibles.push(cuenta);
+  return cuenta;
+}
+
+function aplicarEntidadCreada(pendiente, fase, entidad) {
+  if (pendiente.modo === 'correccion') {
+    pendiente.cambios[CLAVE_CAMBIO[fase]] = entidad;
+    return;
+  }
+  if (fase === 'crearCuenta') {
+    pendiente.cuentaId = entidad.id;
+    pendiente.cuentaNombre = entidad.nombre;
+  } else if (fase === 'crearCuentaDestino') {
+    pendiente.cuentaDestinoId = entidad.id;
+    pendiente.cuentaDestinoNombre = entidad.nombre;
+  } else {
+    aplicarCategoria(pendiente, entidad);
+  }
+}
+
+async function resolverCreacion(ctx, preguntaId, pendiente, acepta) {
+  const fase = pendiente.fase;
+  const campo = CAMPO_PROPUESTA[fase];
+  const nombre = conversacion.capitalizar(pendiente[campo]);
+  pendiente[campo] = null;
+
+  if (!acepta) {
+    await actualizarMensajePregunta(ctx, pendiente, mensajes.noSeCrea);
+    if (pendiente.modo === 'correccion') {
+      cerrarPendiente(ctx.chat.id, preguntaId);
+      return ctx.reply(mensajes.sinCambios, HTML);
+    }
+    return continuar(ctx, preguntaId, pendiente);
+  }
+
+  let entidad;
+  try {
+    entidad = await crearEntidad(pendiente, fase, nombre);
+  } catch (error) {
+    if (!error.status) throw error;
+    await actualizarMensajePregunta(ctx, pendiente, mensajes.noEntendido(error.message));
+    if (pendiente.modo === 'correccion') {
+      cerrarPendiente(ctx.chat.id, preguntaId);
+      return;
+    }
+    return continuar(ctx, preguntaId, pendiente);
+  }
+
+  aplicarEntidadCreada(pendiente, fase, entidad);
+  await actualizarMensajePregunta(ctx, pendiente, mensajes.entidadCreada(CLASE_ENTIDAD[fase], entidad.nombre));
+  return continuar(ctx, preguntaId, pendiente);
+}
 
 async function preguntar(ctx, preguntaId, pendiente, fase, texto, teclado) {
   pendiente.fase = fase;
-  pendiente.chatId = ctx.chat.id;
   guardarPendiente(ctx.chat.id, preguntaId, pendiente);
 
   const opciones = teclado ? { ...HTML, reply_markup: teclado } : HTML;
@@ -326,8 +418,27 @@ async function preguntar(ctx, preguntaId, pendiente, fase, texto, teclado) {
   pendiente.mensajeId = enviado.message_id;
 }
 
+async function preguntarCrear(ctx, preguntaId, pendiente, fase) {
+  const nombre = conversacion.capitalizar(pendiente[CAMPO_PROPUESTA[fase]]);
+  return preguntar(
+    ctx, preguntaId, pendiente, fase,
+    mensajes.proponerCrear(CLASE_ENTIDAD[fase], nombre),
+    tecladoCrear(preguntaId),
+  );
+}
+
+async function continuarCorreccion(ctx, preguntaId, pendiente) {
+  if (pendiente.propuestaCuenta) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCuenta');
+  if (pendiente.propuestaCuentaDestino) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCuentaDestino');
+  if (pendiente.propuestaCategoria) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCategoria');
+
+  cerrarPendiente(ctx.chat.id, preguntaId);
+  return aplicarCorreccion(ctx, pendiente.usuarioId, pendiente.cambios, pendiente.texto);
+}
 
 async function continuar(ctx, preguntaId, pendiente) {
+  if (pendiente.modo === 'correccion') return continuarCorreccion(ctx, preguntaId, pendiente);
+
   if (!pendiente.monto) {
     return preguntar(
       ctx, preguntaId, pendiente, 'monto',
@@ -337,6 +448,7 @@ async function continuar(ctx, preguntaId, pendiente) {
   }
 
   if (!pendiente.cuentaId) {
+    if (pendiente.propuestaCuenta) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCuenta');
     pendiente.fase = 'cuenta';
     const texto = pendiente.tipo === 'transferencia' ? '¿Desde cuál cuenta sale?' : '¿Con cuál cuenta fue?';
     return preguntar(
@@ -347,6 +459,7 @@ async function continuar(ctx, preguntaId, pendiente) {
   }
 
   if (pendiente.tipo === 'transferencia' && !pendiente.cuentaDestinoId) {
+    if (pendiente.propuestaCuentaDestino) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCuentaDestino');
     pendiente.fase = 'cuentaDestino';
     return preguntar(
       ctx, preguntaId, pendiente, 'cuentaDestino',
@@ -356,6 +469,7 @@ async function continuar(ctx, preguntaId, pendiente) {
   }
 
   if (pendiente.tipo === 'gasto' && pendiente.categoriaId === undefined) {
+    if (pendiente.propuestaCategoria) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCategoria');
     return preguntar(
       ctx, preguntaId, pendiente, 'categoria',
       '¿En qué categoría lo registro? Toca una opción o escribe el nombre.',
@@ -374,7 +488,6 @@ async function continuar(ctx, preguntaId, pendiente) {
   }
 }
 
-
 async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
   const activo = pendienteActivo(ctx.chat.id);
   if (!activo) return false;
@@ -382,6 +495,16 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
   const { preguntaId, pendiente } = activo;
   if (pendiente.usuarioId !== usuarioId) return false;
 
+  if (FASES_CREACION.includes(pendiente.fase)) {
+    if (conversacion.esAfirmacion(texto)) {
+      await resolverCreacion(ctx, preguntaId, pendiente, true);
+      return true;
+    }
+    if (conversacion.esNegacion(texto)) {
+      await resolverCreacion(ctx, preguntaId, pendiente, false);
+      return true;
+    }
+  }
 
   if (conversacion.esCancelacion(texto)) {
     cerrarPendiente(ctx.chat.id, preguntaId);
@@ -389,6 +512,8 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
     await ctx.reply(mensajes.cancelado, HTML);
     return true;
   }
+
+  if (FASES_CREACION.includes(pendiente.fase)) return false;
 
   let confirmacion;
 
@@ -422,27 +547,24 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
   return true;
 }
 
-
 async function responderSinMovimiento(ctx, r, nombre, usuarioId, texto) {
   if (r.intencion === 'deshacer') return deshacerUltimo(ctx, usuarioId);
 
   if (r.intencion === 'corregir') {
     const abierta = pendienteActivo(ctx.chat.id);
     if (abierta) return ctx.reply(mensajes.recordatorioPregunta(abierta.pendiente.fase), HTML);
-    return corregirUltimo(ctx, usuarioId, r.cambios, texto);
+    return corregirUltimo(ctx, usuarioId, r, texto);
   }
 
   if (r.intencion === 'saludo') return ctx.reply(mensajes.saludo(nombre), HTML);
   if (r.intencion === 'agradecimiento') return ctx.reply(mensajes.agradecimiento(), HTML);
   if (r.intencion === 'ayuda') return ctx.reply(mensajes.formatos(r.cuentasDisponibles), HTML);
 
-
   const activo = pendienteActivo(ctx.chat.id);
   if (activo) return ctx.reply(mensajes.recordatorioPregunta(activo.pendiente.fase), HTML);
 
   return ctx.reply(mensajes.noEntendido(), HTML);
 }
-
 
 async function procesarTexto(ctx, usuarioId, texto, nombre) {
   if (texto.length > LARGO_MAXIMO_MENSAJE) {
@@ -453,19 +575,19 @@ async function procesarTexto(ctx, usuarioId, texto, nombre) {
     return ctx.reply('🐢 Vas muy rápido, dame un momento y vuelve a intentarlo.', HTML);
   }
 
-
   if (await responderPreguntaPorTexto(ctx, usuarioId, texto)) return;
-
 
   const r = await interpretacionService.interpretar(usuarioId, texto, ultimoValido(ctx.chat.id));
 
   if (!r.reconocido) return responderSinMovimiento(ctx, r, nombre, usuarioId, texto);
 
-
   await descartarPreguntaActiva(ctx);
 
   const preguntaId = crypto.randomBytes(4).toString('hex');
+  const esTransferencia = r.tipo === 'transferencia';
+  const esGasto = r.tipo === 'gasto';
   const pendiente = {
+    modo: 'registro',
     usuarioId,
     creadoEn: Date.now(),
     tipo: r.tipo,
@@ -474,10 +596,13 @@ async function procesarTexto(ctx, usuarioId, texto, nombre) {
     fecha: r.fecha,
     cuentaId: r.cuenta?.id ?? null,
     cuentaNombre: r.cuenta?.nombre ?? null,
-    cuentaDestinoId: r.tipo === 'transferencia' ? (r.cuentaDestino?.id ?? null) : null,
-    cuentaDestinoNombre: r.tipo === 'transferencia' ? (r.cuentaDestino?.nombre ?? null) : null,
-    categoriaId: r.tipo === 'gasto' ? (r.categoria?.id ?? undefined) : null,
-    categoriaNombre: r.tipo === 'gasto' ? (r.categoria?.nombre ?? null) : null,
+    cuentaDestinoId: esTransferencia ? (r.cuentaDestino?.id ?? null) : null,
+    cuentaDestinoNombre: esTransferencia ? (r.cuentaDestino?.nombre ?? null) : null,
+    categoriaId: esGasto ? (r.categoria?.id ?? undefined) : null,
+    categoriaNombre: esGasto ? (r.categoria?.nombre ?? null) : null,
+    propuestaCuenta: r.cuenta ? null : r.cuentaMencionada,
+    propuestaCuentaDestino: esTransferencia && !r.cuentaDestino ? r.cuentaDestinoMencionada : null,
+    propuestaCategoria: esGasto && !r.categoria ? r.categoriaMencionada : null,
     cuentasDisponibles: r.cuentasDisponibles,
     categoriasDisponibles: r.categoriasDisponibles,
   };
@@ -527,6 +652,14 @@ async function manejarBoton(ctx) {
   }
 
   try {
+    if (accion === 'crear') {
+      if (!FASES_CREACION.includes(pendiente.fase)) {
+        return ctx.answerCallbackQuery({ text: 'Esa opción ya no es válida.' });
+      }
+      await ctx.answerCallbackQuery();
+      return resolverCreacion(ctx, preguntaId, pendiente, valor === 'si');
+    }
+
     if (accion === 'cuenta') {
       const cuenta = pendiente.cuentasDisponibles.find((c) => c.id === valor);
       if (!cuenta) return ctx.answerCallbackQuery({ text: 'Esa opción ya no es válida.' });

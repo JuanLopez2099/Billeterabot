@@ -93,7 +93,6 @@ function noEntendido(detalle) {
   );
 }
 
-// Elige una frase al azar para que el bot no suene repetitivo.
 function alAzar(frases) {
   return frases[Math.floor(Math.random() * frases.length)];
 }
@@ -122,27 +121,24 @@ function agradecimiento() {
 
 const cancelado = '🚫 Listo, no registré nada.';
 
-// Recordatorio cuando el usuario responde algo que no sirve para la pregunta pendiente.
 function recordatorioPregunta(fase) {
   const pide = {
     monto: 'el monto (por ejemplo <code>20000</code> o <code>20 mil</code>)',
     cuenta: 'la cuenta (toca un botón o escribe su nombre)',
     cuentaDestino: 'la cuenta de destino (toca un botón o escribe su nombre)',
     categoria: 'la categoría (toca un botón o escribe su nombre)',
+    crearCuenta: 'saber si creo la cuenta (toca un botón o escribe sí o no)',
+    crearCuentaDestino: 'saber si creo la cuenta (toca un botón o escribe sí o no)',
+    crearCategoria: 'saber si creo la categoría (toca un botón o escribe sí o no)',
   }[fase] || 'ese dato';
   return `🤔 No te entendí. Sigo esperando ${pide}.\nSi prefieres dejarlo, escribe <b>cancela</b>.`;
 }
 
-// Mensajes de la Fase 2: corregir y deshacer por texto.
 const sinMovimientoReciente =
   '🤷 No tengo un movimiento reciente para eso. Si es uno más antiguo, puedes corregirlo o eliminarlo desde la página.';
 
 const nadaQueCorregir =
   '🤔 No entendí qué quieres cambiar. Puedes decirme, por ejemplo: <code>eran 20000</code>, <code>ponlo en Nequi</code> o <code>era de transporte</code>.';
-
-function noExiste(clase, nombre) {
-  return `🤔 No encontré la ${clase} «${escapar(nombre)}». Revisa el nombre o créala desde la página.`;
-}
 
 function sinCategoria(tipo) {
   return tipo === 'ingreso'
@@ -160,6 +156,20 @@ function movimientoDeshecho(m) {
   }
   return `↩️ Listo, deshice el gasto de ${formatoPesos(m.monto)}${descripcion}.`;
 }
+
+function proponerCrear(clase, nombre) {
+  const articulo = clase === 'cuenta' ? 'una cuenta' : 'una categoría';
+  return `🤔 No tienes ${articulo} llamada <b>${escapar(nombre)}</b>. ¿La creo?`;
+}
+
+function entidadCreada(clase, nombre) {
+  const rotulo = clase === 'cuenta' ? 'Cuenta' : 'Categoría';
+  return `✅ ${rotulo} «${escapar(nombre)}» creada.`;
+}
+
+const noSeCrea = '👌 Está bien, no la creo.';
+
+const sinCambios = '👌 Listo, no cambié nada.';
 
 module.exports = {
   escapar,
@@ -180,7 +190,10 @@ module.exports = {
   recordatorioPregunta,
   sinMovimientoReciente,
   nadaQueCorregir,
-  noExiste,
   sinCategoria,
   movimientoDeshecho,
+  proponerCrear,
+  entidadCreada,
+  noSeCrea,
+  sinCambios,
 };

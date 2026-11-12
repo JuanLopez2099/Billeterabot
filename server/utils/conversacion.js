@@ -1,5 +1,10 @@
 const { normalizar } = require('./texto');
 
+const PALETA_COLORES = [
+  '#1f5c3f', '#b3413a', '#35618c', '#c9a227', '#7a7a6e', '#6c4f8a',
+  '#5c8a6e', '#a85c32', '#4a7c8c', '#8a4a63', '#94792c', '#3d5a99',
+];
+
 function limpiar(texto = '') {
   return normalizar(String(texto))
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
@@ -15,7 +20,6 @@ function numeroDesdeTexto(token) {
   const despues = token.slice(ultimo + 1);
 
   if (despues.length === 3) return Number(token.replace(/[.,]/g, ''));
-
   if (separadores.length === 1) return Number(token.replace(',', '.'));
 
   return null;
@@ -81,4 +85,36 @@ function esCancelacion(texto) {
   return CANCELAR.has(limpio) || /^cancel/.test(limpio) || /^olvid/.test(limpio);
 }
 
-module.exports = { limpiar, extraerMonto, contieneMonto, elegirOpcion, esSinCategoria, esCancelacion };
+function esAfirmacion(texto) {
+  const limpio = limpiar(texto);
+  return /^(si|sii|sip|dale|claro|ok|okay|vale|listo|hazlo|de una|obvio|correcto|por favor|porfa|yes)\b/.test(limpio)
+    || /^crea/.test(limpio);
+}
+
+function esNegacion(texto) {
+  return /^(no|nop|nope|nel|negativo|mejor no)\b/.test(limpiar(texto));
+}
+
+function capitalizar(texto) {
+  const limpio = String(texto ?? '').trim().replace(/\s+/g, ' ');
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1);
+}
+
+function elegirColor(usados = []) {
+  const libres = PALETA_COLORES.filter((c) => !usados.includes(c));
+  const disponibles = libres.length > 0 ? libres : PALETA_COLORES;
+  return disponibles[Math.floor(Math.random() * disponibles.length)];
+}
+
+module.exports = {
+  limpiar,
+  extraerMonto,
+  contieneMonto,
+  elegirOpcion,
+  esSinCategoria,
+  esCancelacion,
+  esAfirmacion,
+  esNegacion,
+  capitalizar,
+  elegirColor,
+};
