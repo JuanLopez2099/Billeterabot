@@ -20,6 +20,20 @@ const VENCIMIENTO_PREGUNTA_MS = 10 * 60 * 1000;
 const pendientes = new Map();             
 const preguntaActivaPorChat = new Map();  
 
+
+const VENCIMIENTO_ULTIMO_MS = 30 * 60 * 1000;
+const ultimoPorChat = new Map();          
+
+function ultimoValido(chatId) {
+  const ultimo = ultimoPorChat.get(chatId);
+  if (!ultimo) return null;
+  if (Date.now() - ultimo.creadoEn > VENCIMIENTO_ULTIMO_MS) {
+    ultimoPorChat.delete(chatId);
+    return null;
+  }
+  return ultimo;
+}
+
 const historialEnvios = new Map();
 
 function dentroDelLimite(chatId) {
@@ -46,7 +60,7 @@ function cerrarPendiente(chatId, preguntaId) {
   if (preguntaActivaPorChat.get(chatId) === preguntaId) preguntaActivaPorChat.delete(chatId);
 }
 
-// Devuelve { preguntaId, pendiente } si este chat tiene una pregunta vigente, o null.
+
 function pendienteActivo(chatId) {
   const preguntaId = preguntaActivaPorChat.get(chatId);
   if (!preguntaId) return null;
@@ -63,6 +77,16 @@ async function actualizarMensajePregunta(ctx, pendiente, texto) {
   if (!pendiente.mensajeId) return;
   try {
     await ctx.api.editMessageText(ctx.chat.id, pendiente.mensajeId, texto, SIN_TECLADO);
+  } catch {
+
+  }
+}
+
+
+async function quitarBotones(ctx, mensajeId) {
+  if (!mensajeId) return;
+  try {
+    await ctx.api.editMessageReplyMarkup(ctx.chat.id, mensajeId, { reply_markup: { inline_keyboard: [] } });
   } catch {
 
   }
@@ -95,14 +119,12 @@ function tecladoCategorias(preguntaId, categorias) {
   return teclado;
 }
 
-
 function cuentasParaFase(pendiente) {
   if (pendiente.fase === 'cuentaDestino') {
     return pendiente.cuentasDisponibles.filter((c) => c.id !== pendiente.cuentaId);
   }
   return pendiente.cuentasDisponibles;
 }
-
 
 
 function aplicarCuenta(pendiente, cuenta) {
@@ -151,7 +173,146 @@ async function guardarYResponder(ctx, pendiente) {
   });
 
   const teclado = new InlineKeyboard().text('↩️ Deshacer', `deshacer:${tipo}:${registro.id}`);
-  await ctx.reply(resumen, { ...HTML, reply_markup: teclado });
+  const enviado = await ctx.reply(resumen, { ...HTML, reply_markup: teclado });
+
+
+  ultimoPorChat.set(ctx.chat.id, {
+    id: registro.id,
+    tipo,
+    monto: registro.monto,
+    descripcion: registro.descripcion ?? descripcion ?? null,
+    fecha,
+    cuentaId,
+    cuentaNombre: pendiente.cuentaNombre,
+    cuentaDestinoId: cuentaDestinoId ?? null,
+    cuentaDestinoNombre: pendiente.cuentaDestinoNombre ?? null,
+    categoriaId: categoriaId ?? null,
+    categoriaNombre: pendiente.categoriaNombre ?? null,
+    mensajeId: enviado.message_id,
+    creadoEn: Date.now(),
+  });
+}
+
+
+async function eliminarMovimiento(usuarioId, tipo, id) {
+  if (tipo === 'gasto') return gastoService.eliminarGasto(usuarioId, id);
+  if (tipo === 'ingreso') return ingresoService.eliminarIngreso(usuarioId, id);
+  return transferenciaService.eliminarTransferencia(usuarioId, id);
+}
+
+
+async function editarMovimiento(usuarioId, m) {
+  if (m.tipo === 'transferencia') {
+    return transferenciaService.editarTransferencia(usuarioId, m.id, {
+      monto: m.monto, cuentaOrigenId: m.cuentaId, cuentaDestinoId: m.cuentaDestinoId, fecha: m.fecha,
+    });
+  }
+  if (m.tipo === 'ingreso') {
+    return ingresoService.editarIngreso(usuarioId, m.id, {
+      monto: m.monto, cuentaId: m.cuentaId, descripcion: m.descripcion, fecha: m.fecha,
+    });
+  }
+  return gastoService.editarGasto(usuarioId, m.id, {
+    monto: m.monto, cuentaId: m.cuentaId, categoriaId: m.categoriaId, descripcion: m.descripcion, fecha: m.fecha,
+  });
+}
+
+
+async function deshacerUltimo(ctx, usuarioId) {
+  const activo = pendienteActivo(ctx.chat.id);
+  if (activo) {
+    cerrarPendiente(ctx.chat.id, activo.preguntaId);
+    await actualizarMensajePregunta(ctx, activo.pendiente, '🚫 Pregunta cancelada.');
+    return ctx.reply(mensajes.cancelado, HTML);
+  }
+
+  const ultimo = ultimoValido(ctx.chat.id);
+  if (!ultimo) return ctx.reply(mensajes.sinMovimientoReciente, HTML);
+
+  try {
+    await eliminarMovimiento(usuarioId, ultimo.tipo, ultimo.id);
+  } catch (error) {
+    if (error.status === 404) {
+      ultimoPorChat.delete(ctx.chat.id);
+      return ctx.reply(mensajes.sinMovimientoReciente, HTML);
+    }
+    throw error;
+  }
+
+  ultimoPorChat.delete(ctx.chat.id);
+  await quitarBotones(ctx, ultimo.mensajeId);
+  return ctx.reply(mensajes.movimientoDeshecho(ultimo), HTML);
+}
+
+async function corregirUltimo(ctx, usuarioId, cambios, texto) {
+  const ultimo = ultimoValido(ctx.chat.id);
+  if (!ultimo) return ctx.reply(mensajes.sinMovimientoReciente, HTML);
+
+
+  if (cambios.cuentaMencionada && !cambios.cuenta) {
+    return ctx.reply(mensajes.noExiste('cuenta', cambios.cuentaMencionada), HTML);
+  }
+  if (cambios.cuentaDestinoMencionada && !cambios.cuentaDestino && ultimo.tipo === 'transferencia') {
+    return ctx.reply(mensajes.noExiste('cuenta', cambios.cuentaDestinoMencionada), HTML);
+  }
+  if (cambios.categoriaMencionada && !cambios.categoria) {
+    return ctx.reply(mensajes.noExiste('categoría', cambios.categoriaMencionada), HTML);
+  }
+
+
+  const nuevo = { ...ultimo };
+  let huboCambio = false;
+
+  if (cambios.monto) {
+    nuevo.monto = cambios.monto;
+    huboCambio = true;
+  }
+  if (cambios.cuenta) {
+    nuevo.cuentaId = cambios.cuenta.id;
+    nuevo.cuentaNombre = cambios.cuenta.nombre;
+    huboCambio = true;
+  }
+  if (cambios.cuentaDestino && ultimo.tipo === 'transferencia') {
+    nuevo.cuentaDestinoId = cambios.cuentaDestino.id;
+    nuevo.cuentaDestinoNombre = cambios.cuentaDestino.nombre;
+    huboCambio = true;
+  }
+  if (cambios.categoria) {
+    if (ultimo.tipo !== 'gasto') return ctx.reply(mensajes.sinCategoria(ultimo.tipo), HTML);
+    nuevo.categoriaId = cambios.categoria.id;
+    nuevo.categoriaNombre = cambios.categoria.nombre;
+    huboCambio = true;
+  }
+  // La descripción solo se cambia si el usuario la nombra, para que la IA no la pise por error.
+  const pideDescripcion = /descrip|concepto|nota/.test(conversacion.limpiar(texto));
+  if (cambios.descripcion && pideDescripcion && ultimo.tipo !== 'transferencia') {
+    nuevo.descripcion = cambios.descripcion;
+    huboCambio = true;
+  }
+
+  if (!huboCambio) return ctx.reply(mensajes.nadaQueCorregir, HTML);
+
+  try {
+    await editarMovimiento(usuarioId, nuevo);
+  } catch (error) {
+    if (error.status) return ctx.reply(mensajes.noEntendido(error.message), HTML);
+    throw error;
+  }
+
+  const resumen = mensajes.movimientoRegistrado({
+    tipo: nuevo.tipo,
+    monto: nuevo.monto,
+    descripcion: nuevo.descripcion,
+    cuenta: nuevo.cuentaNombre,
+    cuentaOrigen: nuevo.cuentaNombre,
+    cuentaDestino: nuevo.cuentaDestinoNombre,
+    categoria: nuevo.categoriaNombre,
+  }, true);
+
+  await quitarBotones(ctx, ultimo.mensajeId);
+  const teclado = new InlineKeyboard().text('↩️ Deshacer', `deshacer:${nuevo.tipo}:${nuevo.id}`);
+  const enviado = await ctx.reply(resumen, { ...HTML, reply_markup: teclado });
+  ultimoPorChat.set(ctx.chat.id, { ...nuevo, mensajeId: enviado.message_id, creadoEn: Date.now() });
 }
 
 
@@ -221,7 +382,7 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
   const { preguntaId, pendiente } = activo;
   if (pendiente.usuarioId !== usuarioId) return false;
 
-  // "cancela", "olvídalo", "mejor no"...
+
   if (conversacion.esCancelacion(texto)) {
     cerrarPendiente(ctx.chat.id, preguntaId);
     await actualizarMensajePregunta(ctx, pendiente, '🚫 Pregunta cancelada.');
@@ -237,7 +398,6 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
     pendiente.monto = monto;
     confirmacion = `✅ Monto: ${mensajes.formatoPesos(monto)}`;
   } else {
-    // Si trae un número ("gasté 5000 con nequi") es un movimiento nuevo, no una respuesta.
     if (conversacion.contieneMonto(texto)) return false;
 
     if (pendiente.fase === 'categoria') {
@@ -263,7 +423,15 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
 }
 
 
-async function responderSinMovimiento(ctx, r, nombre) {
+async function responderSinMovimiento(ctx, r, nombre, usuarioId, texto) {
+  if (r.intencion === 'deshacer') return deshacerUltimo(ctx, usuarioId);
+
+  if (r.intencion === 'corregir') {
+    const abierta = pendienteActivo(ctx.chat.id);
+    if (abierta) return ctx.reply(mensajes.recordatorioPregunta(abierta.pendiente.fase), HTML);
+    return corregirUltimo(ctx, usuarioId, r.cambios, texto);
+  }
+
   if (r.intencion === 'saludo') return ctx.reply(mensajes.saludo(nombre), HTML);
   if (r.intencion === 'agradecimiento') return ctx.reply(mensajes.agradecimiento(), HTML);
   if (r.intencion === 'ayuda') return ctx.reply(mensajes.formatos(r.cuentasDisponibles), HTML);
@@ -289,9 +457,9 @@ async function procesarTexto(ctx, usuarioId, texto, nombre) {
   if (await responderPreguntaPorTexto(ctx, usuarioId, texto)) return;
 
 
-  const r = await interpretacionService.interpretar(usuarioId, texto);
+  const r = await interpretacionService.interpretar(usuarioId, texto, ultimoValido(ctx.chat.id));
 
-  if (!r.reconocido) return responderSinMovimiento(ctx, r, nombre);
+  if (!r.reconocido) return responderSinMovimiento(ctx, r, nombre, usuarioId, texto);
 
 
   await descartarPreguntaActiva(ctx);
@@ -317,12 +485,10 @@ async function procesarTexto(ctx, usuarioId, texto, nombre) {
   return continuar(ctx, preguntaId, pendiente);
 }
 
-// ─────────────────────────── BOTONES ───────────────────────────
 async function manejarDeshacer(ctx, usuarioId, tipo, id) {
   try {
-    if (tipo === 'gasto') await gastoService.eliminarGasto(usuarioId, id);
-    else if (tipo === 'ingreso') await ingresoService.eliminarIngreso(usuarioId, id);
-    else await transferenciaService.eliminarTransferencia(usuarioId, id);
+    await eliminarMovimiento(usuarioId, tipo, id);
+    if (ultimoPorChat.get(ctx.chat.id)?.id === id) ultimoPorChat.delete(ctx.chat.id);
 
     await ctx.answerCallbackQuery();
     await ctx.editMessageText('↩️ Movimiento deshecho.', SIN_TECLADO);

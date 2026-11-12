@@ -66,19 +66,22 @@ function formatoPesos(numero) {
   }).format(numero);
 }
 
-function movimientoRegistrado(resultado) {
+function movimientoRegistrado(resultado, corregido = false) {
+  const icono = corregido ? '✏️' : '✅';
+  const hecho = (femenino) => (corregido ? 'actualizad' : 'registrad') + (femenino ? 'a' : 'o');
+
   if (resultado.tipo === 'transferencia') {
-    return `✅ Transferencia registrada: ${formatoPesos(resultado.monto)} de <b>${escapar(resultado.cuentaOrigen)}</b> a <b>${escapar(resultado.cuentaDestino)}</b>.`;
+    return `${icono} Transferencia ${hecho(true)}: ${formatoPesos(resultado.monto)} de <b>${escapar(resultado.cuentaOrigen)}</b> a <b>${escapar(resultado.cuentaDestino)}</b>.`;
   }
 
   if (resultado.tipo === 'ingreso') {
     const descripcion = resultado.descripcion ? ` (${escapar(resultado.descripcion)})` : '';
-    return `✅ Ingreso registrado: +${formatoPesos(resultado.monto)} en <b>${escapar(resultado.cuenta)}</b>${descripcion}.`;
+    return `${icono} Ingreso ${hecho(false)}: +${formatoPesos(resultado.monto)} en <b>${escapar(resultado.cuenta)}</b>${descripcion}.`;
   }
 
   const categoria = resultado.categoria ? ` en <b>${escapar(resultado.categoria)}</b>` : '';
   const descripcion = resultado.descripcion ? ` (${escapar(resultado.descripcion)})` : '';
-  return `✅ Gasto registrado: -${formatoPesos(resultado.monto)}${categoria} desde <b>${escapar(resultado.cuenta)}</b>${descripcion}.`;
+  return `${icono} Gasto ${hecho(false)}: -${formatoPesos(resultado.monto)}${categoria} desde <b>${escapar(resultado.cuenta)}</b>${descripcion}.`;
 }
 
 function noEntendido(detalle) {
@@ -119,7 +122,7 @@ function agradecimiento() {
 
 const cancelado = '🚫 Listo, no registré nada.';
 
-
+// Recordatorio cuando el usuario responde algo que no sirve para la pregunta pendiente.
 function recordatorioPregunta(fase) {
   const pide = {
     monto: 'el monto (por ejemplo <code>20000</code> o <code>20 mil</code>)',
@@ -128,6 +131,34 @@ function recordatorioPregunta(fase) {
     categoria: 'la categoría (toca un botón o escribe su nombre)',
   }[fase] || 'ese dato';
   return `🤔 No te entendí. Sigo esperando ${pide}.\nSi prefieres dejarlo, escribe <b>cancela</b>.`;
+}
+
+// Mensajes de la Fase 2: corregir y deshacer por texto.
+const sinMovimientoReciente =
+  '🤷 No tengo un movimiento reciente para eso. Si es uno más antiguo, puedes corregirlo o eliminarlo desde la página.';
+
+const nadaQueCorregir =
+  '🤔 No entendí qué quieres cambiar. Puedes decirme, por ejemplo: <code>eran 20000</code>, <code>ponlo en Nequi</code> o <code>era de transporte</code>.';
+
+function noExiste(clase, nombre) {
+  return `🤔 No encontré la ${clase} «${escapar(nombre)}». Revisa el nombre o créala desde la página.`;
+}
+
+function sinCategoria(tipo) {
+  return tipo === 'ingreso'
+    ? '🤔 Los ingresos no tienen categoría.'
+    : '🤔 Las transferencias no tienen categoría.';
+}
+
+function movimientoDeshecho(m) {
+  const descripcion = m.descripcion ? ` (${escapar(m.descripcion)})` : '';
+  if (m.tipo === 'transferencia') {
+    return `↩️ Listo, deshice la transferencia de ${formatoPesos(m.monto)} de <b>${escapar(m.cuentaNombre)}</b> a <b>${escapar(m.cuentaDestinoNombre)}</b>.`;
+  }
+  if (m.tipo === 'ingreso') {
+    return `↩️ Listo, deshice el ingreso de ${formatoPesos(m.monto)}${descripcion}.`;
+  }
+  return `↩️ Listo, deshice el gasto de ${formatoPesos(m.monto)}${descripcion}.`;
 }
 
 module.exports = {
@@ -147,4 +178,9 @@ module.exports = {
   agradecimiento,
   cancelado,
   recordatorioPregunta,
+  sinMovimientoReciente,
+  nadaQueCorregir,
+  noExiste,
+  sinCategoria,
+  movimientoDeshecho,
 };

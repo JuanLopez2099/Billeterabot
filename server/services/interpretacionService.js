@@ -1,9 +1,9 @@
+// server/services/interpretacionService.js
 const { normalizar } = require('../utils/texto');
 const { fechaDeHoy } = require('../utils/fechas');
 const cuentaService = require('./cuentaService');
 const categoriaService = require('./categoriaService');
 const groqService = require('./groqService');
-
 
 function buscarCuenta(nombreMencionado, cuentas) {
   if (!nombreMencionado) return null;
@@ -12,7 +12,6 @@ function buscarCuenta(nombreMencionado, cuentas) {
     cuentas.find((c) => normalizar(c.nombre) === buscado) ||
     cuentas.find((c) => {
       const real = normalizar(c.nombre);
-      // La coincidencia parcial solo se usa si ambos nombres tienen 3 letras o más.
       if (real.length < 3 || buscado.length < 3) return false;
       return real.includes(buscado) || buscado.includes(real);
     }) ||
@@ -26,13 +25,39 @@ function buscarCategoria(nombreMencionado, categorias) {
   return categorias.find((c) => normalizar(c.nombre) === buscado) || null;
 }
 
-async function interpretar(usuarioId, texto) {
+
+function montoValido(valor) {
+  const numero = Math.round(Number(valor));
+  return Number.isFinite(numero) && numero > 0 ? numero : null;
+}
+
+async function interpretar(usuarioId, texto, ultimo = null) {
   const [cuentas, categorias] = await Promise.all([
     cuentaService.listarCuentas(usuarioId),
     categoriaService.listarCategorias(usuarioId),
   ]);
 
-  const interpretado = await groqService.interpretarMensaje(texto, { cuentas, categorias });
+  const interpretado = await groqService.interpretarMensaje(texto, { cuentas, categorias, ultimo });
+
+
+  if (interpretado.intencion === 'corregir') {
+    return {
+      reconocido: false,
+      intencion: 'corregir',
+      cambios: {
+        monto: montoValido(interpretado.monto),
+        cuenta: buscarCuenta(interpretado.cuenta, cuentas),
+        cuentaMencionada: interpretado.cuenta || null,
+        cuentaDestino: buscarCuenta(interpretado.cuentaDestino, cuentas),
+        cuentaDestinoMencionada: interpretado.cuentaDestino || null,
+        categoria: buscarCategoria(interpretado.categoria, categorias),
+        categoriaMencionada: interpretado.categoria || null,
+        descripcion: interpretado.descripcion || null,
+      },
+      cuentasDisponibles: cuentas,
+      categoriasDisponibles: categorias,
+    };
+  }
 
 
   if (interpretado.intencion !== 'registrar' || interpretado.tipo === 'ninguno') {
@@ -40,9 +65,8 @@ async function interpretar(usuarioId, texto) {
     return { reconocido: false, intencion, cuentasDisponibles: cuentas };
   }
 
-  // El monto puede faltar: en ese caso el bot se lo pregunta al usuario.
-  const montoNum = Math.round(Number(interpretado.monto));
-  const monto = Number.isFinite(montoNum) && montoNum > 0 ? montoNum : null;
+
+  const monto = montoValido(interpretado.monto);
 
   return {
     reconocido: true,

@@ -8,7 +8,7 @@ const ESQUEMA = {
   schema: {
     type: 'object',
     properties: {
-      intencion: { type: 'string', enum: ['registrar', 'saludo', 'agradecimiento', 'ayuda', 'desconocido'] },
+      intencion: { type: 'string', enum: ['registrar', 'corregir', 'deshacer', 'saludo', 'agradecimiento', 'ayuda', 'desconocido'] },
       tipo: { type: 'string', enum: ['gasto', 'ingreso', 'transferencia', 'ninguno'] },
       monto: { type: ['integer', 'null'] },
       cuenta: { type: ['string', 'null'] },
@@ -21,32 +21,52 @@ const ESQUEMA = {
   },
 };
 
-function construirPrompt({ cuentas, categorias }) {
+
+function describirUltimo(ultimo) {
+  if (!ultimo) return 'El usuario no tiene ningún movimiento reciente que corregir o deshacer.';
+  const partes = [`${ultimo.tipo} de ${ultimo.monto} pesos`];
+  if (ultimo.cuentaNombre) {
+    partes.push(ultimo.tipo === 'transferencia' ? `desde ${ultimo.cuentaNombre}` : `con la cuenta ${ultimo.cuentaNombre}`);
+  }
+  if (ultimo.cuentaDestinoNombre) partes.push(`hacia ${ultimo.cuentaDestinoNombre}`);
+  if (ultimo.categoriaNombre) partes.push(`categoría ${ultimo.categoriaNombre}`);
+  if (ultimo.descripcion) partes.push(`descripción "${ultimo.descripcion}"`);
+  return `Último movimiento registrado por el usuario: ${partes.join(', ')}.`;
+}
+
+function construirPrompt({ cuentas, categorias, ultimo }) {
   const nombresCuentas = cuentas.map((c) => c.nombre).join(', ');
   const nombresCategorias = categorias.map((c) => c.nombre).join(', ');
 
   return `Eres el asistente de un bot de finanzas personales para un usuario colombiano. Interpretas su mensaje en español y lo conviertes en datos estructurados. Todos los movimientos se registran con la fecha de hoy; no interpretes ni menciones fechas.
 
+${describirUltimo(ultimo)}
+
 Primero decide la "intencion" del mensaje:
-- "registrar": el usuario cuenta un gasto, un ingreso o una transferencia, aunque le falte algún dato (por ejemplo, el monto).
+- "registrar": el usuario cuenta un gasto, un ingreso o una transferencia NUEVOS, aunque le falte algún dato (por ejemplo, el monto).
+- "corregir": el usuario quiere cambiar algo del último movimiento ya registrado ("no, eran 20000", "ponlo en Bancolombia", "era de transporte", "me equivoqué, fue con Nequi").
+- "deshacer": el usuario quiere borrar o anular el último movimiento ("deshaz eso", "bórralo", "elimina eso", "me equivoqué, quítalo").
 - "saludo": solo saluda ("hola", "buenas", "qué tal").
 - "agradecimiento": agradece, confirma o se despide ("gracias", "listo", "perfecto", "chao").
 - "ayuda": pregunta qué puedes hacer o cómo se usa el bot.
 - "desconocido": cualquier otra cosa.
+Un mensaje que cuenta un movimiento nuevo completo ("gasté 20000 en taxi") es "registrar", aunque se parezca al último.
 
-Si la intención NO es "registrar", usa tipo "ninguno" y todos los demás campos en null.
+Si la intención NO es "registrar" ni "corregir", usa tipo "ninguno" y todos los demás campos en null.
+
+Si la intención es "corregir", usa tipo "ninguno" y llena SOLO los campos que el usuario quiere cambiar (monto, cuenta, cuentaDestino, categoria); los demás van en null. "descripcion" va en null, salvo que el usuario pida expresamente cambiar la descripción.
 
 Si la intención es "registrar", elige el "tipo":
 - "gasto": el usuario pagó o gastó dinero.
 - "ingreso": el usuario recibió dinero.
 - "transferencia": el usuario movió dinero entre DOS cuentas propias.
 
-Reglas para "registrar":
+Reglas para los campos (en "registrar" y "corregir"):
 - "monto": en pesos colombianos, como entero sin decimales (ignora puntos de miles y la palabra "pesos"). Ej: "15.000 pesos" -> 15000. "20 mil" -> 20000. Si el usuario no menciona ningún monto, usa null. Nunca inventes un monto.
-- "cuenta": para "gasto" e "ingreso" es la cuenta usada. Para "transferencia" es la cuenta de ORIGEN. Elige el nombre más parecido entre estas cuentas reales del usuario: ${nombresCuentas || '(sin cuentas registradas)'}. Si no se menciona, usa null.
-- "cuentaDestino": solo para "transferencia", de la misma lista. Para los demás tipos, siempre null.
-- "categoria": solo para "gasto". Usa el nombre de una de estas si aplica: ${nombresCategorias || '(sin categorías)'}. Si ninguna encaja o no estás seguro, usa null.
-- "descripcion": una frase muy corta (máximo 5 palabras) que resuma el movimiento. Si no aplica, null.
+- "cuenta": para "gasto" e "ingreso" es la cuenta usada. Para "transferencia" es la cuenta de ORIGEN. Si el nombre se parece a una de estas cuentas reales del usuario, usa el nombre de la cuenta real: ${nombresCuentas || '(sin cuentas registradas)'}. Si menciona una cuenta que no se parece a ninguna, escribe el nombre tal como lo dijo. Si no menciona cuenta, usa null.
+- "cuentaDestino": solo para "transferencia", con las mismas reglas. Para los demás tipos, siempre null.
+- "categoria": solo para gastos. Si encaja con una de estas, usa su nombre: ${nombresCategorias || '(sin categorías)'}. Si el usuario menciona una categoría que no se parece a ninguna, escribe el nombre tal como lo dijo. Si no menciona categoría o no estás seguro, usa null.
+- "descripcion": en "registrar", una frase muy corta (máximo 5 palabras) que resuma el movimiento. Si no aplica, null.
 
 Responde ÚNICAMENTE con el JSON pedido, sin texto adicional.`;
 }
