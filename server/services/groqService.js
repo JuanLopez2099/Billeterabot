@@ -19,8 +19,25 @@ const ESQUEMA = {
       fecha: { type: ['string', 'null'] },
       consulta: { type: 'string', enum: ['saldo', 'gastos', 'ingresos', 'categorias', 'ultimos', 'ninguna'] },
       periodo: { type: ['string', 'null'] },
+      adicionales: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            tipo: { type: 'string', enum: ['gasto', 'ingreso', 'transferencia'] },
+            monto: { type: ['integer', 'null'] },
+            cuenta: { type: ['string', 'null'] },
+            cuentaDestino: { type: ['string', 'null'] },
+            categoria: { type: ['string', 'null'] },
+            descripcion: { type: ['string', 'null'] },
+            fecha: { type: ['string', 'null'] },
+          },
+          required: ['tipo', 'monto', 'cuenta', 'cuentaDestino', 'categoria', 'descripcion', 'fecha'],
+          additionalProperties: false,
+        },
+      },
     },
-    required: ['intencion', 'tipo', 'monto', 'cuenta', 'cuentaDestino', 'categoria', 'descripcion', 'nombre', 'fecha', 'consulta', 'periodo'],
+    required: ['intencion', 'tipo', 'monto', 'cuenta', 'cuentaDestino', 'categoria', 'descripcion', 'nombre', 'fecha', 'consulta', 'periodo', 'adicionales'],
     additionalProperties: false,
   },
 };
@@ -78,6 +95,8 @@ Si la intención es "registrar", elige el "tipo":
 - "ingreso": el usuario recibió dinero.
 - "transferencia": el usuario movió dinero entre DOS cuentas propias.
 
+Si el mensaje cuenta VARIOS movimientos distintos, cada uno con su propio monto (por ejemplo "gasté 15000 en cena y 8000 en taxi"), llena los campos principales con el PRIMERO y pon los demás, en el orden en que aparecen, en "adicionales" (máximo 4). Cada elemento de "adicionales" lleva tipo, monto, cuenta, cuentaDestino, categoria, descripcion y fecha, con las mismas reglas que los campos principales. Si un dato como la cuenta o la fecha se dice una sola vez y vale para todos ("... con Nequi", "... ayer"), repítelo en cada movimiento. Una compra con varios productos y un solo monto ("gasté 20000 en pan y leche") es UN solo movimiento. Si el mensaje cuenta un solo movimiento, "adicionales" va como lista vacía.
+
 Reglas para los campos (en "registrar" y "corregir"):
 - "monto": en pesos colombianos, como entero sin decimales (ignora puntos de miles y la palabra "pesos"). Ej: "15.000 pesos" -> 15000. "20 mil" -> 20000. Si el usuario no menciona ningún monto, usa null. Nunca inventes un monto.
 - "cuenta": para "gasto" e "ingreso" es la cuenta usada. Para "transferencia" es la cuenta de ORIGEN. Si el nombre se parece a una de estas cuentas reales del usuario, usa el nombre de la cuenta real: ${nombresCuentas || '(sin cuentas registradas)'}. Si menciona una cuenta que no se parece a ninguna, escribe el nombre tal como lo dijo. Si no menciona cuenta, usa null. Una cuenta es un banco, una billetera digital, una tarjeta, una alcancía o el efectivo donde el usuario guarda su dinero. Un comercio, lugar, persona, producto o servicio NO es una cuenta (por ejemplo "en el Éxito", "a Juan" o "en tinto" no son cuentas).
@@ -86,6 +105,7 @@ Reglas para los campos (en "registrar" y "corregir"):
 - "descripcion": en "registrar", una frase muy corta (máximo 5 palabras) que resuma el movimiento. Si no aplica, null.
 - "nombre": solo se usa en "crear_cuenta" y "crear_categoria". En cualquier otra intención va en null.
 - "consulta" y "periodo": solo se usan en "consultar".
+- "adicionales": solo se usa en "registrar". En cualquier otra intención va como lista vacía.
 - "fecha": la expresión que usó el usuario para decir CUÁNDO ocurrió el movimiento, copiada tal cual y sin convertirla en una fecha: "ayer", "anteayer", "el lunes", "el viernes pasado", "el 3 de noviembre", "hace 3 días", "el 15", "mañana". Si no dice cuándo, usa null. No incluyas horas ni otras palabras del mensaje. En "corregir", llena "fecha" solo si el usuario quiere cambiar la fecha ("no, fue ayer", "era del lunes"); en cualquier otro caso va en null.
 
 Responde ÚNICAMENTE con el JSON pedido, sin texto adicional.`;

@@ -25,9 +25,31 @@ function buscarCategoria(nombreMencionado, categorias) {
   return categorias.find((c) => normalizar(c.nombre) === buscado) || null;
 }
 
+const MAXIMO_ADICIONALES = 4;
+
 function montoValido(valor) {
   const numero = Math.round(Number(valor));
   return Number.isFinite(numero) && numero > 0 ? numero : null;
+}
+
+function construirMovimiento(datos, cuentas, categorias) {
+  const fecha = resolverFecha(datos.fecha);
+  const esTransferencia = datos.tipo === 'transferencia';
+  const esGasto = datos.tipo === 'gasto';
+
+  return {
+    tipo: datos.tipo,
+    monto: montoValido(datos.monto),
+    descripcion: datos.descripcion || null,
+    fecha: fecha.fecha || fechaDeHoy(),
+    errorFecha: fecha.error,
+    cuenta: buscarCuenta(datos.cuenta, cuentas),
+    cuentaMencionada: datos.cuenta || null,
+    cuentaDestino: esTransferencia ? buscarCuenta(datos.cuentaDestino, cuentas) : null,
+    cuentaDestinoMencionada: esTransferencia ? datos.cuentaDestino || null : null,
+    categoria: esGasto ? buscarCategoria(datos.categoria, categorias) : null,
+    categoriaMencionada: esGasto ? datos.categoria || null : null,
+  };
 }
 
 async function interpretar(usuarioId, texto, ultimo = null) {
@@ -86,23 +108,16 @@ async function interpretar(usuarioId, texto, ultimo = null) {
     };
   }
 
-  const monto = montoValido(interpretado.monto);
-  const fechaMovimiento = resolverFecha(interpretado.fecha);
+  const adicionales = (interpretado.adicionales || [])
+    .slice(0, MAXIMO_ADICIONALES)
+    .map((datos) => construirMovimiento(datos, cuentas, categorias))
+    .filter((movimiento) => movimiento.monto);
 
   return {
     reconocido: true,
     intencion: 'registrar',
-    tipo: interpretado.tipo,
-    monto,
-    descripcion: interpretado.descripcion || null,
-    fecha: fechaMovimiento.fecha || fechaDeHoy(),
-    errorFecha: fechaMovimiento.error,
-    cuenta: buscarCuenta(interpretado.cuenta, cuentas),
-    cuentaMencionada: interpretado.cuenta || null,
-    cuentaDestino: interpretado.tipo === 'transferencia' ? buscarCuenta(interpretado.cuentaDestino, cuentas) : null,
-    cuentaDestinoMencionada: interpretado.tipo === 'transferencia' ? interpretado.cuentaDestino || null : null,
-    categoria: interpretado.tipo === 'gasto' ? buscarCategoria(interpretado.categoria, categorias) : null,
-    categoriaMencionada: interpretado.tipo === 'gasto' ? interpretado.categoria || null : null,
+    ...construirMovimiento(interpretado, cuentas, categorias),
+    adicionales,
     cuentasDisponibles: cuentas,
     categoriasDisponibles: categorias,
   };

@@ -39,6 +39,7 @@ const CLASE_ENTIDAD = {
 const pendientes = new Map();
 const preguntaActivaPorChat = new Map();
 const ultimoPorChat = new Map();
+const lotePorChat = new Map();
 const historialEnvios = new Map();
 
 function ultimoValido(chatId) {
@@ -233,7 +234,7 @@ async function deshacerUltimo(ctx, usuarioId) {
   if (activo) {
     cerrarPendiente(ctx.chat.id, activo.preguntaId);
     await actualizarMensajePregunta(ctx, activo.pendiente, '🚫 Pregunta cancelada.');
-    return ctx.reply(mensajes.cancelado, HTML);
+    return ctx.reply(cancelarLote(ctx.chat.id), HTML);
   }
 
   const ultimo = ultimoValido(ctx.chat.id);
@@ -419,12 +420,84 @@ async function resolverCreacion(ctx, preguntaId, pendiente, acepta) {
   return continuar(ctx, preguntaId, pendiente);
 }
 
+function buscarExacta(nombre, opciones) {
+  if (!nombre) return null;
+  const buscado = conversacion.limpiar(nombre);
+  return opciones.find((o) => conversacion.limpiar(o.nombre) === buscado) || null;
+}
+
+function crearPendiente(usuarioId, mov, listas, posicion = null, total = null) {
+  const esTransferencia = mov.tipo === 'transferencia';
+  const esGasto = mov.tipo === 'gasto';
+  const cuenta = mov.cuenta || buscarExacta(mov.cuentaMencionada, listas.cuentasDisponibles);
+  const cuentaDestino = esTransferencia
+    ? mov.cuentaDestino || buscarExacta(mov.cuentaDestinoMencionada, listas.cuentasDisponibles)
+    : null;
+  const categoria = esGasto
+    ? mov.categoria || buscarExacta(mov.categoriaMencionada, listas.categoriasDisponibles)
+    : null;
+
+  return {
+    modo: 'registro',
+    usuarioId,
+    creadoEn: Date.now(),
+    posicionLote: posicion,
+    totalLote: total,
+    tipo: mov.tipo,
+    monto: mov.monto,
+    descripcion: mov.descripcion,
+    fecha: mov.fecha,
+    cuentaId: cuenta?.id ?? null,
+    cuentaNombre: cuenta?.nombre ?? null,
+    cuentaDestinoId: cuentaDestino?.id ?? null,
+    cuentaDestinoNombre: cuentaDestino?.nombre ?? null,
+    categoriaId: esGasto ? (categoria?.id ?? undefined) : null,
+    categoriaNombre: categoria?.nombre ?? null,
+    propuestaCuenta: cuenta ? null : mov.cuentaMencionada,
+    propuestaCuentaDestino: esTransferencia && !cuentaDestino ? mov.cuentaDestinoMencionada : null,
+    propuestaCategoria: esGasto && !categoria ? mov.categoriaMencionada : null,
+    cuentasDisponibles: listas.cuentasDisponibles,
+    categoriasDisponibles: listas.categoriasDisponibles,
+  };
+}
+
+function etiquetaLote(pendiente) {
+  if (!pendiente.posicionLote) return '';
+  const monto = pendiente.monto ? ` ${mensajes.formatoPesos(pendiente.monto)}` : '';
+  const detalle = pendiente.descripcion ? ` · ${mensajes.escapar(pendiente.descripcion)}` : '';
+  return `<b>Movimiento ${pendiente.posicionLote} de ${pendiente.totalLote}</b> · ${pendiente.tipo}${monto}${detalle}\n`;
+}
+
+async function avanzarLote(ctx) {
+  const lote = lotePorChat.get(ctx.chat.id);
+  if (!lote) return;
+
+  const siguiente = lote.restantes.shift();
+  if (!siguiente) {
+    lotePorChat.delete(ctx.chat.id);
+    return;
+  }
+
+  lote.posicion += 1;
+  const pendiente = crearPendiente(lote.usuarioId, siguiente, lote.listas, lote.posicion, lote.total);
+  return continuar(ctx, crypto.randomBytes(4).toString('hex'), pendiente);
+}
+
+function cancelarLote(chatId) {
+  const lote = lotePorChat.get(chatId);
+  lotePorChat.delete(chatId);
+  if (!lote) return mensajes.cancelado;
+  return lote.restantes.length > 0
+    ? '🚫 Listo, cancelé este movimiento y los que faltaban.'
+    : '🚫 Listo, cancelé este movimiento.';
+}
+
 async function preguntar(ctx, preguntaId, pendiente, fase, texto, teclado) {
   pendiente.fase = fase;
   guardarPendiente(ctx.chat.id, preguntaId, pendiente);
 
   const opciones = teclado ? { ...HTML, reply_markup: teclado } : HTML;
-  const enviado = await ctx.reply(texto, opciones);
+  const enviado = await ctx.reply(etiquetaLote(pendiente) + texto, opciones);
   pendiente.mensajeId = enviado.message_id;
 }
 
@@ -491,11 +564,11 @@ async function continuar(ctx, preguntaId, pendiente) {
   try {
     await guardarYResponder(ctx, pendiente);
   } catch (error) {
-    if (error.status) {
-      return ctx.reply(mensajes.noEntendido(error.message), HTML);
-    }
-    throw error;
+    if (!error.status) throw error;
+    await ctx.reply(mensajes.noEntendido(error.message), HTML);
   }
+
+  return avanzarLote(ctx);
 }
 
 function pareceRespuestaCorta(texto) {
@@ -523,7 +596,7 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
   if (conversacion.esCancelacion(texto)) {
     cerrarPendiente(ctx.chat.id, preguntaId);
     await actualizarMensajePregunta(ctx, pendiente, '🚫 Pregunta cancelada.');
-    await ctx.reply(mensajes.cancelado, HTML);
+    await ctx.reply(cancelarLote(ctx.chat.id), HTML);
     return true;
   }
 
@@ -646,35 +719,22 @@ async function procesarTexto(ctx, usuarioId, texto, nombre) {
 
   if (!r.reconocido) return responderSinMovimiento(ctx, r, nombre, usuarioId, texto);
 
-  if (r.errorFecha) return ctx.reply(mensajes.fechaNoValida(r.errorFecha), HTML);
+  const movimientos = [r, ...(r.adicionales || [])];
+  const conErrorFecha = movimientos.find((m) => m.errorFecha);
+  if (conErrorFecha) return ctx.reply(mensajes.fechaNoValida(conErrorFecha.errorFecha), HTML);
 
   await descartarPreguntaActiva(ctx);
+  lotePorChat.delete(ctx.chat.id);
 
-  const preguntaId = crypto.randomBytes(4).toString('hex');
-  const esTransferencia = r.tipo === 'transferencia';
-  const esGasto = r.tipo === 'gasto';
-  const pendiente = {
-    modo: 'registro',
-    usuarioId,
-    creadoEn: Date.now(),
-    tipo: r.tipo,
-    monto: r.monto,
-    descripcion: r.descripcion,
-    fecha: r.fecha,
-    cuentaId: r.cuenta?.id ?? null,
-    cuentaNombre: r.cuenta?.nombre ?? null,
-    cuentaDestinoId: esTransferencia ? (r.cuentaDestino?.id ?? null) : null,
-    cuentaDestinoNombre: esTransferencia ? (r.cuentaDestino?.nombre ?? null) : null,
-    categoriaId: esGasto ? (r.categoria?.id ?? undefined) : null,
-    categoriaNombre: esGasto ? (r.categoria?.nombre ?? null) : null,
-    propuestaCuenta: r.cuenta ? null : r.cuentaMencionada,
-    propuestaCuentaDestino: esTransferencia && !r.cuentaDestino ? r.cuentaDestinoMencionada : null,
-    propuestaCategoria: esGasto && !r.categoria ? r.categoriaMencionada : null,
-    cuentasDisponibles: r.cuentasDisponibles,
-    categoriasDisponibles: r.categoriasDisponibles,
-  };
+  const listas = { cuentasDisponibles: r.cuentasDisponibles, categoriasDisponibles: r.categoriasDisponibles };
+  const total = movimientos.length;
 
-  return continuar(ctx, preguntaId, pendiente);
+  if (total > 1) {
+    lotePorChat.set(ctx.chat.id, { usuarioId, restantes: movimientos.slice(1), posicion: 1, total, listas });
+  }
+
+  const pendiente = crearPendiente(usuarioId, r, listas, total > 1 ? 1 : null, total > 1 ? total : null);
+  return continuar(ctx, crypto.randomBytes(4).toString('hex'), pendiente);
 }
 
 async function manejarDeshacer(ctx, usuarioId, tipo, id) {
