@@ -1,3 +1,5 @@
+const { fechaDeHoy, describirFecha } = require('../utils/fechas');
+
 function escapar(texto) {
   return String(texto ?? '')
     .replace(/&/g, '&amp;')
@@ -21,7 +23,7 @@ function formatos(cuentas) {
     `➕ También puedo crear cuentas y categorías: <code>Crea la cuenta Binance</code> o <code>Crea la categoría Maquillaje</code>\n\n` +
     `💡 El monto puede ir como 15000, 15.000 o "15 mil". ` +
     `Si me falta algún dato, te lo pregunto y puedes responder con un botón o escribiéndolo.\n` +
-    `📅 <i>Ojo: por ahora solo registro movimientos de hoy; para otra fecha, usa la página.</i>` +
+    `📅 También puedes decirme cuándo fue: <i>ayer</i>, <i>el lunes</i> o <i>el 3 de noviembre</i>. Si no lo digo, lo registro con la fecha de hoy.` +
     `${listaDeCuentas(cuentas)}\n\n` +
     `Escribe /ayuda cuando quieras ver esto otra vez.`
   );
@@ -71,18 +73,20 @@ function movimientoRegistrado(resultado, corregido = false) {
   const icono = corregido ? '✏️' : '✅';
   const hecho = (femenino) => (corregido ? 'actualizad' : 'registrad') + (femenino ? 'a' : 'o');
 
+  const cuando = resultado.fecha && resultado.fecha !== fechaDeHoy() ? ` 📅 ${describirFecha(resultado.fecha)}` : '';
+
   if (resultado.tipo === 'transferencia') {
-    return `${icono} Transferencia ${hecho(true)}: ${formatoPesos(resultado.monto)} de <b>${escapar(resultado.cuentaOrigen)}</b> a <b>${escapar(resultado.cuentaDestino)}</b>.`;
+    return `${icono} Transferencia ${hecho(true)}: ${formatoPesos(resultado.monto)} de <b>${escapar(resultado.cuentaOrigen)}</b> a <b>${escapar(resultado.cuentaDestino)}</b>.${cuando}`;
   }
 
   if (resultado.tipo === 'ingreso') {
     const descripcion = resultado.descripcion ? ` (${escapar(resultado.descripcion)})` : '';
-    return `${icono} Ingreso ${hecho(false)}: +${formatoPesos(resultado.monto)} en <b>${escapar(resultado.cuenta)}</b>${descripcion}.`;
+    return `${icono} Ingreso ${hecho(false)}: +${formatoPesos(resultado.monto)} en <b>${escapar(resultado.cuenta)}</b>${descripcion}.${cuando}`;
   }
 
   const categoria = resultado.categoria ? ` en <b>${escapar(resultado.categoria)}</b>` : '';
   const descripcion = resultado.descripcion ? ` (${escapar(resultado.descripcion)})` : '';
-  return `${icono} Gasto ${hecho(false)}: -${formatoPesos(resultado.monto)}${categoria} desde <b>${escapar(resultado.cuenta)}</b>${descripcion}.`;
+  return `${icono} Gasto ${hecho(false)}: -${formatoPesos(resultado.monto)}${categoria} desde <b>${escapar(resultado.cuenta)}</b>${descripcion}.${cuando}`;
 }
 
 function noEntendido(detalle) {
@@ -168,6 +172,16 @@ function entidadCreada(clase, nombre) {
   return `✅ ${rotulo} «${escapar(nombre)}» creada.`;
 }
 
+function fechaNoValida(motivo) {
+  if (motivo === 'futura') {
+    return '📅 Esa fecha todavía no llega. Solo puedo registrar movimientos de hoy o de días pasados.';
+  }
+  if (motivo === 'antigua') {
+    return '📅 Esa fecha es de hace más de un año. Para movimientos tan antiguos usa la página.';
+  }
+  return '📅 No entendí la fecha. Dímela de otra forma, por ejemplo <code>ayer</code>, <code>el lunes</code> o <code>el 3 de noviembre</code>.';
+}
+
 function creadaPorPedido(clase, nombre) {
   const uso = clase === 'cuenta'
     ? 'Ya puedes usarla en tus movimientos.'
@@ -213,6 +227,7 @@ module.exports = {
   proponerCrear,
   entidadCreada,
   creadaPorPedido,
+  fechaNoValida,
   faltaNombre,
   yaExiste,
   noSeCrea,

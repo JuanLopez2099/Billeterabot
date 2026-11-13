@@ -28,10 +28,7 @@ async function listarHistorial(usuarioId, limite = 20) {
   ];
 
 
-  combinado.sort((a, b) => {
-    if (a.fecha !== b.fecha) return a.fecha < b.fecha ? 1 : -1;
-    return a.creado_en < b.creado_en ? 1 : -1;
-  });
+  combinado.sort((a, b) => new Date(b.creado_en) - new Date(a.creado_en));
 
   return combinado.slice(0, limite);
 }

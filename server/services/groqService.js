@@ -16,8 +16,9 @@ const ESQUEMA = {
       categoria: { type: ['string', 'null'] },
       descripcion: { type: ['string', 'null'] },
       nombre: { type: ['string', 'null'] },
+      fecha: { type: ['string', 'null'] },
     },
-    required: ['intencion', 'tipo', 'monto', 'cuenta', 'cuentaDestino', 'categoria', 'descripcion', 'nombre'],
+    required: ['intencion', 'tipo', 'monto', 'cuenta', 'cuentaDestino', 'categoria', 'descripcion', 'nombre', 'fecha'],
     additionalProperties: false,
   },
 };
@@ -39,7 +40,7 @@ function construirPrompt({ cuentas, categorias, ultimo }) {
   const nombresCuentas = cuentas.map((c) => c.nombre).join(', ');
   const nombresCategorias = categorias.map((c) => c.nombre).join(', ');
 
-  return `Eres el asistente de un bot de finanzas personales para un usuario colombiano. Interpretas su mensaje en español y lo conviertes en datos estructurados. Todos los movimientos se registran con la fecha de hoy; no interpretes ni menciones fechas.
+  return `Eres el asistente de un bot de finanzas personales para un usuario colombiano. Interpretas su mensaje en español y lo conviertes en datos estructurados. Si el usuario dice cuándo ocurrió el movimiento, cópialo en "fecha" tal como lo dijo: tú no conviertes ni calculas fechas.
 
 ${describirUltimo(ultimo)}
 
@@ -70,9 +71,10 @@ Reglas para los campos (en "registrar" y "corregir"):
 - "monto": en pesos colombianos, como entero sin decimales (ignora puntos de miles y la palabra "pesos"). Ej: "15.000 pesos" -> 15000. "20 mil" -> 20000. Si el usuario no menciona ningún monto, usa null. Nunca inventes un monto.
 - "cuenta": para "gasto" e "ingreso" es la cuenta usada. Para "transferencia" es la cuenta de ORIGEN. Si el nombre se parece a una de estas cuentas reales del usuario, usa el nombre de la cuenta real: ${nombresCuentas || '(sin cuentas registradas)'}. Si menciona una cuenta que no se parece a ninguna, escribe el nombre tal como lo dijo. Si no menciona cuenta, usa null. Una cuenta es un banco, una billetera digital, una tarjeta, una alcancía o el efectivo donde el usuario guarda su dinero. Un comercio, lugar, persona, producto o servicio NO es una cuenta (por ejemplo "en el Éxito", "a Juan" o "en tinto" no son cuentas).
 - "cuentaDestino": solo para "transferencia", con las mismas reglas. Para los demás tipos, siempre null.
-- "categoria": solo para gastos. Si encaja con una de estas, usa su nombre: ${nombresCategorias || '(sin categorías)'}. Solo si el usuario dice expresamente una categoría que no está en la lista (por ejemplo "categoría Mascotas"), escribe ese nombre tal como lo dijo; los productos, comercios y lugares (tinto, Éxito, taxi) van en la descripción, no en la categoría. Si no menciona categoría o no estás seguro, usa null.
+- "categoria": solo para gastos. Categorías del usuario: ${nombresCategorias || '(sin categorías)'}. Si por su significado el gasto encaja claramente con una de ellas, usa el nombre exacto de esa categoría aunque el usuario no la haya dicho (por ejemplo, un labial encaja con una categoría de maquillaje y un taxi con una de transporte). Si el gasto no encaja con ninguna, usa null: no inventes categorías ni uses el nombre de un producto, comercio o lugar como categoría. Solo si el usuario dice expresamente una categoría que no está en la lista (por ejemplo "categoría Mascotas"), escribe ese nombre tal como lo dijo. Si no estás seguro, usa null.
 - "descripcion": en "registrar", una frase muy corta (máximo 5 palabras) que resuma el movimiento. Si no aplica, null.
 - "nombre": solo se usa en "crear_cuenta" y "crear_categoria". En cualquier otra intención va en null.
+- "fecha": la expresión que usó el usuario para decir CUÁNDO ocurrió el movimiento, copiada tal cual y sin convertirla en una fecha: "ayer", "anteayer", "el lunes", "el viernes pasado", "el 3 de noviembre", "hace 3 días", "el 15", "mañana". Si no dice cuándo, usa null. No incluyas horas ni otras palabras del mensaje. En "corregir", llena "fecha" solo si el usuario quiere cambiar la fecha ("no, fue ayer", "era del lunes"); en cualquier otro caso va en null.
 
 Responde ÚNICAMENTE con el JSON pedido, sin texto adicional.`;
 }

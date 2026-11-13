@@ -182,6 +182,7 @@ async function guardarYResponder(ctx, pendiente) {
     cuentaOrigen: pendiente.cuentaNombre,
     cuentaDestino: pendiente.cuentaDestinoNombre,
     categoria: pendiente.categoriaNombre,
+    fecha,
   });
 
   const teclado = new InlineKeyboard().text('↩️ Deshacer', `deshacer:${tipo}:${registro.id}`);
@@ -256,6 +257,8 @@ async function aplicarCorreccion(ctx, usuarioId, cambios, texto) {
   const ultimo = ultimoValido(ctx.chat.id);
   if (!ultimo) return ctx.reply(mensajes.sinMovimientoReciente, HTML);
 
+  if (cambios.errorFecha) return ctx.reply(mensajes.fechaNoValida(cambios.errorFecha), HTML);
+
   if ((cambios.categoria || cambios.categoriaMencionada) && ultimo.tipo !== 'gasto') {
     return ctx.reply(mensajes.sinCategoria(ultimo.tipo), HTML);
   }
@@ -288,6 +291,11 @@ async function aplicarCorreccion(ctx, usuarioId, cambios, texto) {
     huboCambio = true;
   }
 
+  if (cambios.fecha) {
+    nuevo.fecha = cambios.fecha;
+    huboCambio = true;
+  }
+
   if (!huboCambio) return ctx.reply(mensajes.nadaQueCorregir, HTML);
 
   try {
@@ -305,6 +313,7 @@ async function aplicarCorreccion(ctx, usuarioId, cambios, texto) {
     cuentaOrigen: nuevo.cuentaNombre,
     cuentaDestino: nuevo.cuentaDestinoNombre,
     categoria: nuevo.categoriaNombre,
+    fecha: nuevo.fecha,
   }, true);
 
   await quitarBotones(ctx, ultimo.mensajeId);
@@ -627,6 +636,8 @@ async function procesarTexto(ctx, usuarioId, texto, nombre) {
   const r = await interpretacionService.interpretar(usuarioId, texto, ultimoValido(ctx.chat.id));
 
   if (!r.reconocido) return responderSinMovimiento(ctx, r, nombre, usuarioId, texto);
+
+  if (r.errorFecha) return ctx.reply(mensajes.fechaNoValida(r.errorFecha), HTML);
 
   await descartarPreguntaActiva(ctx);
 

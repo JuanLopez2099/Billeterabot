@@ -1,5 +1,5 @@
 const { normalizar } = require('../utils/texto');
-const { fechaDeHoy } = require('../utils/fechas');
+const { fechaDeHoy, resolverFecha } = require('../utils/fechas');
 const cuentaService = require('./cuentaService');
 const categoriaService = require('./categoriaService');
 const groqService = require('./groqService');
@@ -38,6 +38,7 @@ async function interpretar(usuarioId, texto, ultimo = null) {
   const interpretado = await groqService.interpretarMensaje(texto, { cuentas, categorias, ultimo });
 
   if (interpretado.intencion === 'corregir') {
+    const fechaCambio = resolverFecha(interpretado.fecha);
     return {
       reconocido: false,
       intencion: 'corregir',
@@ -50,6 +51,8 @@ async function interpretar(usuarioId, texto, ultimo = null) {
         categoria: buscarCategoria(interpretado.categoria, categorias),
         categoriaMencionada: interpretado.categoria || null,
         descripcion: interpretado.descripcion || null,
+        fecha: fechaCambio.fecha,
+        errorFecha: fechaCambio.error,
       },
       cuentasDisponibles: cuentas,
       categoriasDisponibles: categorias,
@@ -68,6 +71,7 @@ async function interpretar(usuarioId, texto, ultimo = null) {
   }
 
   const monto = montoValido(interpretado.monto);
+  const fechaMovimiento = resolverFecha(interpretado.fecha);
 
   return {
     reconocido: true,
@@ -75,7 +79,8 @@ async function interpretar(usuarioId, texto, ultimo = null) {
     tipo: interpretado.tipo,
     monto,
     descripcion: interpretado.descripcion || null,
-    fecha: fechaDeHoy(),
+    fecha: fechaMovimiento.fecha || fechaDeHoy(),
+    errorFecha: fechaMovimiento.error,
     cuenta: buscarCuenta(interpretado.cuenta, cuentas),
     cuentaMencionada: interpretado.cuenta || null,
     cuentaDestino: interpretado.tipo === 'transferencia' ? buscarCuenta(interpretado.cuentaDestino, cuentas) : null,
