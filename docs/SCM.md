@@ -1,6 +1,6 @@
 # SCM - Billeterabot
 
-Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.2 - Actualizado: 2026-11-09
+Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.3 - Actualizado: 2026-11-13
 
 ## 1. Ítems de configuración
 
@@ -39,6 +39,7 @@ Versionado semántico `MAJOR.MINOR.PATCH`: PATCH corrige un error, MINOR agrega 
 | 1.0.0 | Primera versión: autenticación con Google y correo, gastos con categorías, ingresos, transferencias, dashboard y bot de Telegram | Desarrollador principal | 2026-10-07 |
 | 1.1.0 | Cuentas propias con nombre y color, junto con las cuentas predefinidas | Desarrollador principal | 2026-11-08 |
 | 1.2.0 | Registro de gastos, ingresos y transferencias directamente desde el dashboard | Desarrollador principal | 2026-11-09 |
+| 1.3.0 | Mejoras conversacionales del bot: correcciones, creación sugerida, fechas naturales, consultas y múltiples movimientos | Desarrollador principal | 2026-11-13 |
 
 ## 4. Control de cambios
 
@@ -74,11 +75,21 @@ Flujo: solicitud (issue de GitHub) → ficha en este documento → decisión (de
 | Decisión | Aprobada: acceso directo al formulario unificado desde el dashboard |
 | Nueva linea base | 1.2.0 |
 
+### CR-004 Mejoras de lenguaje natural y consultas en el bot
+
+| Campo | Respuesta |
+|---|---|
+| Ítems afectados | `server/bot/`, servicios de interpretación, consultas e historial, y utilidades de conversación, fechas y periodos |
+| Impacto | El bot permite corregir o deshacer movimientos con texto, sugiere crear cuentas o categorías faltantes, interpreta fechas naturales, responde consultas financieras y registra varios movimientos de un mensaje |
+| Riesgo | Interpretación incorrecta del mensaje, fechas o periodo; el servidor valida los datos y aplica las reglas de los servicios existentes antes de guardar |
+| Decisión | Aprobada: ampliar el registro por lenguaje natural y habilitar consultas financieras |
+| Nueva linea base | 1.3.0 |
+
 ## 5. Ambiente y estado
 
 | Ambiente | Rama | Versión | Estado |
 |---|---|---|---|
-| Desarrollo | Develop | 1.2.0 | Cambio validado manualmente en `feature/boton-nuevo-movimiento`; pendiente de integrar en Develop |
-| Producción | Master | 1.1.0 | Desplegado y estable |
+| Desarrollo | Develop | 1.3.0 | Cambios validados manualmente; versión integrada |
+| Producción | Master | 1.3.0 | Integrada mediante PR #51 |
 
 Volver atrás: como master se despliega solo, revertir el merge con un pull request vuelve a desplegar la versión anterior. También se puede restaurar un despliegue previo desde el panel de Vercel y de Railway.
