@@ -1,17 +1,14 @@
 # Billeterabot
 
-Aplicación web para llevar el control de tus finanzas personales: registra gastos, ingresos y transferencias entre cuentas desde un dashboard o escribiéndole al bot de Telegram en lenguaje natural (por ejemplo, "gasté 15000 en cena").
-
-> **Estado:** cerca del 95 %. Falta afinar la versión móvil.
+Aplicación web para llevar el control de tus finanzas personales: registra gastos, ingresos y transferencias desde el dashboard o conversando con el bot de Telegram.
 
 ## Funcionalidades
 
 - Inicio de sesión con Google o con correo y contraseña, y recuperación de contraseña.
 - Gastos con categorías propias (incluye gastos sin categoría), ingresos y transferencias entre cuentas.
-- Gestión de cuentas: usa las cuentas predefinidas y crea cuentas propias con nombre y color. Las cuentas propias solo se pueden eliminar cuando no tienen movimientos.
-- Dashboard con resumen mensual, saldo por cuenta, gráficos por categoría, top de gastos e historial de movimientos.
-- Registro directo desde el dashboard: abre el formulario de nuevo movimiento para crear gastos, ingresos o transferencias sin entrar a una categoría.
-- Bot de Telegram: se vincula a tu cuenta, entiende mensajes con IA (Groq), pregunta con botones lo que falte y permite deshacer un registro.
+- Gestión de cuentas: usa cuentas predefinidas y crea cuentas propias con nombre y color.
+- Dashboard con resumen mensual, saldo por cuenta, gráficos por categoría, top de gastos e historial. Permite iniciar registros de gastos, ingresos y transferencias desde un formulario directo.
+- Bot de Telegram con interpretación de lenguaje natural: registra movimientos, permite corregirlos o deshacerlos, sugiere crear cuentas o categorías faltantes, entiende fechas y responde consultas financieras. También admite varios movimientos en un mensaje.
 
 ## Tecnologías
 
@@ -37,21 +34,21 @@ Requisitos: Node.js 22 o superior, y cuentas en Supabase, Groq y Telegram (token
 2. Backend (http://localhost:3000):
    ```
    cd server
-   cp .env.example .env     # completa los valores
+   cp .env.example .env
    npm install
    npm run dev
    ```
 3. Frontend (http://localhost:5173), en otra terminal:
    ```
    cd client
-   cp .env.example .env     # completa los valores
+   cp .env.example .env
    npm install
    npm run dev
    ```
 
-Sin `TELEGRAM_WEBHOOK_URL` el bot funciona por polling, así que no necesitas exponer tu servidor para probarlo.
+Sin `TELEGRAM_WEBHOOK_URL` el bot funciona por polling.
 
 ## Documentación
 
-- Gestión de la configuración: [`docs/SCM.md`](docs/SCM.md)
+- Gestión de configuración: [`docs/SCM.md`](docs/SCM.md)
 - Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md)
