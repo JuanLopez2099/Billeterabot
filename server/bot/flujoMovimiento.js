@@ -9,6 +9,7 @@ const cuentaService = require('../services/cuentaService');
 const categoriaService = require('../services/categoriaService');
 const conversacion = require('../utils/conversacion');
 const mensajes = require('./mensajes');
+const consultas = require('./consultas');
 
 const HTML = { parse_mode: 'HTML' };
 const SIN_TECLADO = { parse_mode: 'HTML', reply_markup: { inline_keyboard: [] } };
@@ -497,6 +498,10 @@ async function continuar(ctx, preguntaId, pendiente) {
   }
 }
 
+function pareceRespuestaCorta(texto) {
+  return !/[?¿]/.test(texto) && conversacion.limpiar(texto).split(' ').length <= 5;
+}
+
 async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
   const activo = pendienteActivo(ctx.chat.id);
   if (!activo) return false;
@@ -534,6 +539,7 @@ async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
   } else {
     const opciones = pendiente.fase === 'categoria' ? pendiente.categoriasDisponibles : cuentasParaFase(pendiente);
     if (conversacion.contieneMonto(texto) && !conversacion.coincideNombreExacto(texto, opciones)) return false;
+    if (!pareceRespuestaCorta(texto)) return false;
 
     if (pendiente.fase === 'categoria') {
       if (conversacion.esSinCategoria(texto)) {
@@ -612,6 +618,9 @@ async function responderSinMovimiento(ctx, r, nombre, usuarioId, texto) {
     return crearPorPedido(ctx, usuarioId, r);
   }
 
+  if (r.intencion === 'consultar') {
+    return ctx.reply(await consultas.responder(usuarioId, r), HTML);
+  }
   if (r.intencion === 'saludo') return ctx.reply(mensajes.saludo(nombre), HTML);
   if (r.intencion === 'agradecimiento') return ctx.reply(mensajes.agradecimiento(), HTML);
   if (r.intencion === 'ayuda') return ctx.reply(mensajes.formatos(r.cuentasDisponibles), HTML);

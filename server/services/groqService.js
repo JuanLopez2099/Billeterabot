@@ -8,7 +8,7 @@ const ESQUEMA = {
   schema: {
     type: 'object',
     properties: {
-      intencion: { type: 'string', enum: ['registrar', 'corregir', 'deshacer', 'crear_cuenta', 'crear_categoria', 'saludo', 'agradecimiento', 'ayuda', 'desconocido'] },
+      intencion: { type: 'string', enum: ['registrar', 'corregir', 'deshacer', 'crear_cuenta', 'crear_categoria', 'consultar', 'saludo', 'agradecimiento', 'ayuda', 'desconocido'] },
       tipo: { type: 'string', enum: ['gasto', 'ingreso', 'transferencia', 'ninguno'] },
       monto: { type: ['integer', 'null'] },
       cuenta: { type: ['string', 'null'] },
@@ -17,8 +17,10 @@ const ESQUEMA = {
       descripcion: { type: ['string', 'null'] },
       nombre: { type: ['string', 'null'] },
       fecha: { type: ['string', 'null'] },
+      consulta: { type: 'string', enum: ['saldo', 'gastos', 'ingresos', 'categorias', 'ultimos', 'ninguna'] },
+      periodo: { type: ['string', 'null'] },
     },
-    required: ['intencion', 'tipo', 'monto', 'cuenta', 'cuentaDestino', 'categoria', 'descripcion', 'nombre', 'fecha'],
+    required: ['intencion', 'tipo', 'monto', 'cuenta', 'cuentaDestino', 'categoria', 'descripcion', 'nombre', 'fecha', 'consulta', 'periodo'],
     additionalProperties: false,
   },
 };
@@ -50,15 +52,24 @@ Primero decide la "intencion" del mensaje:
 - "deshacer": el usuario quiere borrar o anular el último movimiento ("deshaz eso", "bórralo", "elimina eso", "me equivoqué, quítalo").
 - "crear_cuenta": el usuario pide crear o agregar una cuenta nueva SIN contar ningún movimiento ("crea la cuenta Binance", "agrega una cuenta llamada Ahorros viaje").
 - "crear_categoria": el usuario pide crear o agregar una categoría nueva SIN contar ningún movimiento ("crea la categoría Maquillaje", "quiero una categoría de mascotas").
+- "consultar": el usuario hace una pregunta sobre su dinero y no cuenta ningún movimiento nuevo ("¿cuánto tengo?", "¿cuánto gasté este mes?", "¿en qué gasto más?", "muéstrame mis últimos movimientos").
 - "saludo": solo saluda ("hola", "buenas", "qué tal").
 - "agradecimiento": agradece, confirma o se despide ("gracias", "listo", "perfecto", "chao").
 - "ayuda": pregunta qué puedes hacer o cómo se usa el bot.
 - "desconocido": cualquier otra cosa.
-Un mensaje que cuenta un movimiento nuevo completo ("gasté 20000 en taxi") es "registrar", aunque se parezca al último. Si el mensaje trae un monto, nunca uses "crear_cuenta" ni "crear_categoria".
+Un mensaje que cuenta un movimiento nuevo completo ("gasté 20000 en taxi") es "registrar", aunque se parezca al último. Si el mensaje trae un monto, nunca uses "crear_cuenta" ni "crear_categoria". Una pregunta como "¿cuánto gasté ayer?" es "consultar", mientras que "gasté 20000 ayer" es "registrar".
 
 Si la intención es "crear_cuenta" o "crear_categoria", usa tipo "ninguno", escribe en "nombre" solo el nombre que pidió el usuario tal como lo dijo (sin artículos como "la" o "el" y sin las palabras "cuenta" o "categoría") y deja los demás campos en null. Si no dijo ningún nombre, "nombre" va en null.
 
-Si la intención NO es "registrar", "corregir", "crear_cuenta" ni "crear_categoria", usa tipo "ninguno" y todos los demás campos en null.
+Si la intención es "consultar", usa tipo "ninguno" y deja monto, cuentaDestino, descripcion, nombre y fecha en null. Llena "consulta" con lo que pregunta el usuario:
+- "saldo": cuánto dinero tiene, en total o en una cuenta.
+- "gastos": cuánto gastó en un periodo, en total o en una categoría o con una cuenta.
+- "ingresos": cuánto recibió o le entró en un periodo.
+- "categorias": en qué categorías gasta más o cómo se reparten sus gastos.
+- "ultimos": sus últimos movimientos o registros.
+Usa "cuenta" y "categoria" solo si el usuario quiere filtrar por una cuenta o categoría concreta; si no, van en null. En "periodo" copia tal cual la expresión que usó el usuario para el periodo ("este mes", "hoy", "ayer", "esta semana", "el mes pasado", "octubre", "este año", "los últimos 7 días"), sin convertirla; si no dice ningún periodo, usa null.
+
+Si la intención NO es "registrar", "corregir", "crear_cuenta", "crear_categoria" ni "consultar", usa tipo "ninguno" y todos los demás campos en null. En toda intención distinta de "consultar", "consulta" va en "ninguna" y "periodo" en null.
 
 Si la intención es "corregir", usa tipo "ninguno" y llena SOLO los campos que el usuario quiere cambiar (monto, cuenta, cuentaDestino, categoria); los demás van en null. "descripcion" va en null, salvo que el usuario pida expresamente cambiar la descripción.
 
@@ -74,6 +85,7 @@ Reglas para los campos (en "registrar" y "corregir"):
 - "categoria": solo para gastos. Categorías del usuario: ${nombresCategorias || '(sin categorías)'}. Si por su significado el gasto encaja claramente con una de ellas, usa el nombre exacto de esa categoría aunque el usuario no la haya dicho (por ejemplo, un labial encaja con una categoría de maquillaje y un taxi con una de transporte). Si el gasto no encaja con ninguna, usa null: no inventes categorías ni uses el nombre de un producto, comercio o lugar como categoría. Solo si el usuario dice expresamente una categoría que no está en la lista (por ejemplo "categoría Mascotas"), escribe ese nombre tal como lo dijo. Si no estás seguro, usa null.
 - "descripcion": en "registrar", una frase muy corta (máximo 5 palabras) que resuma el movimiento. Si no aplica, null.
 - "nombre": solo se usa en "crear_cuenta" y "crear_categoria". En cualquier otra intención va en null.
+- "consulta" y "periodo": solo se usan en "consultar".
 - "fecha": la expresión que usó el usuario para decir CUÁNDO ocurrió el movimiento, copiada tal cual y sin convertirla en una fecha: "ayer", "anteayer", "el lunes", "el viernes pasado", "el 3 de noviembre", "hace 3 días", "el 15", "mañana". Si no dice cuándo, usa null. No incluyas horas ni otras palabras del mensaje. En "corregir", llena "fecha" solo si el usuario quiere cambiar la fecha ("no, fue ayer", "era del lunes"); en cualquier otro caso va en null.
 
 Responde ÚNICAMENTE con el JSON pedido, sin texto adicional.`;

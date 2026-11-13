@@ -1,5 +1,6 @@
 const { normalizar } = require('../utils/texto');
 const { fechaDeHoy, resolverFecha } = require('../utils/fechas');
+const { resolverPeriodo } = require('../utils/periodos');
 const cuentaService = require('./cuentaService');
 const categoriaService = require('./categoriaService');
 const groqService = require('./groqService');
@@ -54,6 +55,21 @@ async function interpretar(usuarioId, texto, ultimo = null) {
         fecha: fechaCambio.fecha,
         errorFecha: fechaCambio.error,
       },
+      cuentasDisponibles: cuentas,
+      categoriasDisponibles: categorias,
+    };
+  }
+
+  if (interpretado.intencion === 'consultar') {
+    return {
+      reconocido: false,
+      intencion: 'consultar',
+      consulta: interpretado.consulta,
+      periodo: resolverPeriodo(interpretado.periodo),
+      cuenta: buscarCuenta(interpretado.cuenta, cuentas),
+      cuentaMencionada: interpretado.cuenta || null,
+      categoria: buscarCategoria(interpretado.categoria, categorias),
+      categoriaMencionada: interpretado.categoria || null,
       cuentasDisponibles: cuentas,
       categoriasDisponibles: categorias,
     };

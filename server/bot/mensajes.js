@@ -20,7 +20,8 @@ function formatos(cuentas) {
     `💸 <code>Gasté 15000 en cena con Nequi</code>\n` +
     `💰 <code>Me llegaron 500 mil de salario a Bancolombia</code>\n` +
     `🔁 <code>Pasé 50000 de Nequi a Bancolombia</code>\n\n` +
-    `➕ También puedo crear cuentas y categorías: <code>Crea la cuenta Binance</code> o <code>Crea la categoría Maquillaje</code>\n\n` +
+    `➕ También puedo crear cuentas y categorías: <code>Crea la cuenta Binance</code> o <code>Crea la categoría Maquillaje</code>\n` +
+    `📊 Y responder preguntas: <code>¿Cuánto llevo gastado este mes?</code> o <code>¿Cuánto tengo en Nequi?</code>\n\n` +
     `💡 El monto puede ir como 15000, 15.000 o "15 mil". ` +
     `Si me falta algún dato, te lo pregunto y puedes responder con un botón o escribiéndolo.\n` +
     `📅 También puedes decirme cuándo fue: <i>ayer</i>, <i>el lunes</i> o <i>el 3 de noviembre</i>. Si no lo digo, lo registro con la fecha de hoy.` +
