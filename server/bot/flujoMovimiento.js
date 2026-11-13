@@ -1,4 +1,3 @@
-// server/bot/flujoMovimiento.js
 const crypto = require('crypto');
 const { InlineKeyboard } = require('grammy');
 const interpretacionService = require('../services/interpretacionService');
@@ -6,7 +5,11 @@ const telegramService = require('../services/telegramService');
 const ingresoService = require('../services/ingresoService');
 const gastoService = require('../services/gastoService');
 const transferenciaService = require('../services/transferenciaService');
+const cuentaService = require('../services/cuentaService');
+const categoriaService = require('../services/categoriaService');
+const conversacion = require('../utils/conversacion');
 const mensajes = require('./mensajes');
+const consultas = require('./consultas');
 
 const HTML = { parse_mode: 'HTML' };
 const SIN_TECLADO = { parse_mode: 'HTML', reply_markup: { inline_keyboard: [] } };
@@ -14,12 +17,40 @@ const SIN_TECLADO = { parse_mode: 'HTML', reply_markup: { inline_keyboard: [] } 
 const LARGO_MAXIMO_MENSAJE = 300;
 const MENSAJES_POR_MINUTO = 10;
 const VENCIMIENTO_PREGUNTA_MS = 10 * 60 * 1000;
+const VENCIMIENTO_ULTIMO_MS = 30 * 60 * 1000;
 
+const FASES_CREACION = ['crearCuenta', 'crearCuentaDestino', 'crearCategoria'];
+const CAMPO_PROPUESTA = {
+  crearCuenta: 'propuestaCuenta',
+  crearCuentaDestino: 'propuestaCuentaDestino',
+  crearCategoria: 'propuestaCategoria',
+};
+const CLAVE_CAMBIO = {
+  crearCuenta: 'cuenta',
+  crearCuentaDestino: 'cuentaDestino',
+  crearCategoria: 'categoria',
+};
+const CLASE_ENTIDAD = {
+  crearCuenta: 'cuenta',
+  crearCuentaDestino: 'cuenta',
+  crearCategoria: 'categoría',
+};
 
 const pendientes = new Map();
-
-
+const preguntaActivaPorChat = new Map();
+const ultimoPorChat = new Map();
+const lotePorChat = new Map();
 const historialEnvios = new Map();
+
+function ultimoValido(chatId) {
+  const ultimo = ultimoPorChat.get(chatId);
+  if (!ultimo) return null;
+  if (Date.now() - ultimo.creadoEn > VENCIMIENTO_ULTIMO_MS) {
+    ultimoPorChat.delete(chatId);
+    return null;
+  }
+  return ultimo;
+}
 
 function dentroDelLimite(chatId) {
   const ahora = Date.now();
@@ -31,6 +62,52 @@ function dentroDelLimite(chatId) {
 
 function pendienteVencido(pendiente) {
   return Date.now() - pendiente.creadoEn > VENCIMIENTO_PREGUNTA_MS;
+}
+
+function guardarPendiente(chatId, preguntaId, pendiente) {
+  const anterior = preguntaActivaPorChat.get(chatId);
+  if (anterior && anterior !== preguntaId) pendientes.delete(anterior);
+  pendientes.set(preguntaId, pendiente);
+  preguntaActivaPorChat.set(chatId, preguntaId);
+}
+
+function cerrarPendiente(chatId, preguntaId) {
+  pendientes.delete(preguntaId);
+  if (preguntaActivaPorChat.get(chatId) === preguntaId) preguntaActivaPorChat.delete(chatId);
+}
+
+function pendienteActivo(chatId) {
+  const preguntaId = preguntaActivaPorChat.get(chatId);
+  if (!preguntaId) return null;
+  const pendiente = pendientes.get(preguntaId);
+  if (!pendiente || pendienteVencido(pendiente)) {
+    cerrarPendiente(chatId, preguntaId);
+    return null;
+  }
+  return { preguntaId, pendiente };
+}
+
+async function actualizarMensajePregunta(ctx, pendiente, texto) {
+  if (!pendiente.mensajeId) return;
+  try {
+    await ctx.api.editMessageText(ctx.chat.id, pendiente.mensajeId, texto, SIN_TECLADO);
+  } catch {
+  }
+}
+
+async function quitarBotones(ctx, mensajeId) {
+  if (!mensajeId) return;
+  try {
+    await ctx.api.editMessageReplyMarkup(ctx.chat.id, mensajeId, { reply_markup: { inline_keyboard: [] } });
+  } catch {
+  }
+}
+
+async function descartarPreguntaActiva(ctx) {
+  const activo = pendienteActivo(ctx.chat.id);
+  if (!activo) return;
+  cerrarPendiente(ctx.chat.id, activo.preguntaId);
+  await actualizarMensajePregunta(ctx, activo.pendiente, '↪️ Pregunta descartada.');
 }
 
 function tecladoCuentas(preguntaId, cuentas) {
@@ -50,6 +127,39 @@ function tecladoCategorias(preguntaId, categorias) {
   });
   teclado.row().text('Sin categoría', `categoria:${preguntaId}:ninguna`);
   return teclado;
+}
+
+function tecladoCrear(preguntaId) {
+  return new InlineKeyboard()
+    .text('✅ Sí, créala', `crear:${preguntaId}:si`)
+    .text('No', `crear:${preguntaId}:no`);
+}
+
+function cuentasParaFase(pendiente) {
+  if (pendiente.fase === 'cuentaDestino') {
+    return pendiente.cuentasDisponibles.filter((c) => c.id !== pendiente.cuentaId);
+  }
+  return pendiente.cuentasDisponibles;
+}
+
+function aplicarCuenta(pendiente, cuenta) {
+  if (pendiente.fase === 'cuentaDestino') {
+    pendiente.cuentaDestinoId = cuenta.id;
+    pendiente.cuentaDestinoNombre = cuenta.nombre;
+  } else {
+    pendiente.cuentaId = cuenta.id;
+    pendiente.cuentaNombre = cuenta.nombre;
+  }
+}
+
+function etiquetaCuenta(pendiente, cuenta) {
+  const rotulo = pendiente.fase === 'cuentaDestino' ? 'Cuenta destino' : 'Cuenta';
+  return `✅ ${rotulo}: ${mensajes.escapar(cuenta.nombre)}`;
+}
+
+function aplicarCategoria(pendiente, categoria) {
+  pendiente.categoriaId = categoria ? categoria.id : null;
+  pendiente.categoriaNombre = categoria ? categoria.nombre : null;
 }
 
 async function guardarYResponder(ctx, pendiente) {
@@ -74,43 +184,527 @@ async function guardarYResponder(ctx, pendiente) {
     cuentaOrigen: pendiente.cuentaNombre,
     cuentaDestino: pendiente.cuentaDestinoNombre,
     categoria: pendiente.categoriaNombre,
+    fecha,
   });
 
   const teclado = new InlineKeyboard().text('↩️ Deshacer', `deshacer:${tipo}:${registro.id}`);
-  await ctx.reply(resumen, { ...HTML, reply_markup: teclado });
+  const enviado = await ctx.reply(resumen, { ...HTML, reply_markup: teclado });
+
+  ultimoPorChat.set(ctx.chat.id, {
+    id: registro.id,
+    tipo,
+    monto: registro.monto,
+    descripcion: registro.descripcion ?? descripcion ?? null,
+    fecha,
+    cuentaId,
+    cuentaNombre: pendiente.cuentaNombre,
+    cuentaDestinoId: cuentaDestinoId ?? null,
+    cuentaDestinoNombre: pendiente.cuentaDestinoNombre ?? null,
+    categoriaId: categoriaId ?? null,
+    categoriaNombre: pendiente.categoriaNombre ?? null,
+    mensajeId: enviado.message_id,
+    creadoEn: Date.now(),
+  });
+}
+
+async function eliminarMovimiento(usuarioId, tipo, id) {
+  if (tipo === 'gasto') return gastoService.eliminarGasto(usuarioId, id);
+  if (tipo === 'ingreso') return ingresoService.eliminarIngreso(usuarioId, id);
+  return transferenciaService.eliminarTransferencia(usuarioId, id);
+}
+
+async function editarMovimiento(usuarioId, m) {
+  if (m.tipo === 'transferencia') {
+    return transferenciaService.editarTransferencia(usuarioId, m.id, {
+      monto: m.monto, cuentaOrigenId: m.cuentaId, cuentaDestinoId: m.cuentaDestinoId, fecha: m.fecha,
+    });
+  }
+  if (m.tipo === 'ingreso') {
+    return ingresoService.editarIngreso(usuarioId, m.id, {
+      monto: m.monto, cuentaId: m.cuentaId, descripcion: m.descripcion, fecha: m.fecha,
+    });
+  }
+  return gastoService.editarGasto(usuarioId, m.id, {
+    monto: m.monto, cuentaId: m.cuentaId, categoriaId: m.categoriaId, descripcion: m.descripcion, fecha: m.fecha,
+  });
+}
+
+async function deshacerUltimo(ctx, usuarioId) {
+  const activo = pendienteActivo(ctx.chat.id);
+  if (activo) {
+    cerrarPendiente(ctx.chat.id, activo.preguntaId);
+    await actualizarMensajePregunta(ctx, activo.pendiente, '🚫 Pregunta cancelada.');
+    return ctx.reply(cancelarLote(ctx.chat.id), HTML);
+  }
+
+  const ultimo = ultimoValido(ctx.chat.id);
+  if (!ultimo) return ctx.reply(mensajes.sinMovimientoReciente, HTML);
+
+  try {
+    await eliminarMovimiento(usuarioId, ultimo.tipo, ultimo.id);
+  } catch (error) {
+    if (error.status === 404) {
+      ultimoPorChat.delete(ctx.chat.id);
+      return ctx.reply(mensajes.sinMovimientoReciente, HTML);
+    }
+    throw error;
+  }
+
+  ultimoPorChat.delete(ctx.chat.id);
+  await quitarBotones(ctx, ultimo.mensajeId);
+  return ctx.reply(mensajes.movimientoDeshecho(ultimo), HTML);
+}
+
+async function aplicarCorreccion(ctx, usuarioId, cambios, texto) {
+  const ultimo = ultimoValido(ctx.chat.id);
+  if (!ultimo) return ctx.reply(mensajes.sinMovimientoReciente, HTML);
+
+  if (cambios.errorFecha) return ctx.reply(mensajes.fechaNoValida(cambios.errorFecha), HTML);
+
+  if ((cambios.categoria || cambios.categoriaMencionada) && ultimo.tipo !== 'gasto') {
+    return ctx.reply(mensajes.sinCategoria(ultimo.tipo), HTML);
+  }
+
+  const nuevo = { ...ultimo };
+  let huboCambio = false;
+
+  if (cambios.monto) {
+    nuevo.monto = cambios.monto;
+    huboCambio = true;
+  }
+  if (cambios.cuenta) {
+    nuevo.cuentaId = cambios.cuenta.id;
+    nuevo.cuentaNombre = cambios.cuenta.nombre;
+    huboCambio = true;
+  }
+  if (cambios.cuentaDestino && ultimo.tipo === 'transferencia') {
+    nuevo.cuentaDestinoId = cambios.cuentaDestino.id;
+    nuevo.cuentaDestinoNombre = cambios.cuentaDestino.nombre;
+    huboCambio = true;
+  }
+  if (cambios.categoria) {
+    nuevo.categoriaId = cambios.categoria.id;
+    nuevo.categoriaNombre = cambios.categoria.nombre;
+    huboCambio = true;
+  }
+  const pideDescripcion = /descrip|concepto|nota/.test(conversacion.limpiar(texto));
+  if (cambios.descripcion && pideDescripcion && ultimo.tipo !== 'transferencia') {
+    nuevo.descripcion = cambios.descripcion;
+    huboCambio = true;
+  }
+
+  if (cambios.fecha) {
+    nuevo.fecha = cambios.fecha;
+    huboCambio = true;
+  }
+
+  if (!huboCambio) return ctx.reply(mensajes.nadaQueCorregir, HTML);
+
+  try {
+    await editarMovimiento(usuarioId, nuevo);
+  } catch (error) {
+    if (error.status) return ctx.reply(mensajes.noEntendido(error.message), HTML);
+    throw error;
+  }
+
+  const resumen = mensajes.movimientoRegistrado({
+    tipo: nuevo.tipo,
+    monto: nuevo.monto,
+    descripcion: nuevo.descripcion,
+    cuenta: nuevo.cuentaNombre,
+    cuentaOrigen: nuevo.cuentaNombre,
+    cuentaDestino: nuevo.cuentaDestinoNombre,
+    categoria: nuevo.categoriaNombre,
+    fecha: nuevo.fecha,
+  }, true);
+
+  await quitarBotones(ctx, ultimo.mensajeId);
+  const teclado = new InlineKeyboard().text('↩️ Deshacer', `deshacer:${nuevo.tipo}:${nuevo.id}`);
+  const enviado = await ctx.reply(resumen, { ...HTML, reply_markup: teclado });
+  ultimoPorChat.set(ctx.chat.id, { ...nuevo, mensajeId: enviado.message_id, creadoEn: Date.now() });
+}
+
+async function corregirUltimo(ctx, usuarioId, r, texto) {
+  const ultimo = ultimoValido(ctx.chat.id);
+  if (!ultimo) return ctx.reply(mensajes.sinMovimientoReciente, HTML);
+
+  const { cambios } = r;
+  const pendiente = {
+    modo: 'correccion',
+    usuarioId,
+    creadoEn: Date.now(),
+    texto,
+    cambios: { ...cambios },
+    propuestaCuenta: cambios.cuentaMencionada && !cambios.cuenta ? cambios.cuentaMencionada : null,
+    propuestaCuentaDestino:
+      ultimo.tipo === 'transferencia' && cambios.cuentaDestinoMencionada && !cambios.cuentaDestino
+        ? cambios.cuentaDestinoMencionada
+        : null,
+    propuestaCategoria:
+      ultimo.tipo === 'gasto' && cambios.categoriaMencionada && !cambios.categoria
+        ? cambios.categoriaMencionada
+        : null,
+    cuentasDisponibles: r.cuentasDisponibles,
+    categoriasDisponibles: r.categoriasDisponibles,
+  };
+
+  const preguntaId = crypto.randomBytes(4).toString('hex');
+  return continuar(ctx, preguntaId, pendiente);
+}
+
+async function crearEntidad(pendiente, fase, nombre) {
+  if (fase === 'crearCategoria') {
+    const categoria = await categoriaService.crearCategoria(pendiente.usuarioId, {
+      nombre,
+      color: conversacion.elegirColor(pendiente.categoriasDisponibles.map((c) => c.color)),
+      icono: 'otros',
+    });
+    pendiente.categoriasDisponibles.push(categoria);
+    return categoria;
+  }
+
+  const cuenta = await cuentaService.crearCuenta(pendiente.usuarioId, {
+    nombre,
+    color: conversacion.elegirColor(pendiente.cuentasDisponibles.map((c) => c.color)),
+  });
+  pendiente.cuentasDisponibles.push(cuenta);
+  return cuenta;
+}
+
+function aplicarEntidadCreada(pendiente, fase, entidad) {
+  if (pendiente.modo === 'correccion') {
+    pendiente.cambios[CLAVE_CAMBIO[fase]] = entidad;
+    return;
+  }
+  if (fase === 'crearCuenta') {
+    pendiente.cuentaId = entidad.id;
+    pendiente.cuentaNombre = entidad.nombre;
+  } else if (fase === 'crearCuentaDestino') {
+    pendiente.cuentaDestinoId = entidad.id;
+    pendiente.cuentaDestinoNombre = entidad.nombre;
+  } else {
+    aplicarCategoria(pendiente, entidad);
+  }
+}
+
+async function resolverCreacion(ctx, preguntaId, pendiente, acepta) {
+  const fase = pendiente.fase;
+  const campo = CAMPO_PROPUESTA[fase];
+  const nombre = conversacion.capitalizar(pendiente[campo]);
+  pendiente[campo] = null;
+
+  if (!acepta) {
+    await actualizarMensajePregunta(ctx, pendiente, mensajes.noSeCrea);
+    if (pendiente.modo === 'correccion') {
+      cerrarPendiente(ctx.chat.id, preguntaId);
+      return ctx.reply(mensajes.sinCambios, HTML);
+    }
+    return continuar(ctx, preguntaId, pendiente);
+  }
+
+  let entidad;
+  try {
+    entidad = await crearEntidad(pendiente, fase, nombre);
+  } catch (error) {
+    if (!error.status) throw error;
+    await actualizarMensajePregunta(ctx, pendiente, mensajes.noEntendido(error.message));
+    if (pendiente.modo === 'correccion') {
+      cerrarPendiente(ctx.chat.id, preguntaId);
+      return;
+    }
+    return continuar(ctx, preguntaId, pendiente);
+  }
+
+  aplicarEntidadCreada(pendiente, fase, entidad);
+  await actualizarMensajePregunta(ctx, pendiente, mensajes.entidadCreada(CLASE_ENTIDAD[fase], entidad.nombre));
+  return continuar(ctx, preguntaId, pendiente);
+}
+
+function buscarExacta(nombre, opciones) {
+  if (!nombre) return null;
+  const buscado = conversacion.limpiar(nombre);
+  return opciones.find((o) => conversacion.limpiar(o.nombre) === buscado) || null;
+}
+
+function crearPendiente(usuarioId, mov, listas, posicion = null, total = null) {
+  const esTransferencia = mov.tipo === 'transferencia';
+  const esGasto = mov.tipo === 'gasto';
+  const cuenta = mov.cuenta || buscarExacta(mov.cuentaMencionada, listas.cuentasDisponibles);
+  const cuentaDestino = esTransferencia
+    ? mov.cuentaDestino || buscarExacta(mov.cuentaDestinoMencionada, listas.cuentasDisponibles)
+    : null;
+  const categoria = esGasto
+    ? mov.categoria || buscarExacta(mov.categoriaMencionada, listas.categoriasDisponibles)
+    : null;
+
+  return {
+    modo: 'registro',
+    usuarioId,
+    creadoEn: Date.now(),
+    posicionLote: posicion,
+    totalLote: total,
+    tipo: mov.tipo,
+    monto: mov.monto,
+    descripcion: mov.descripcion,
+    fecha: mov.fecha,
+    cuentaId: cuenta?.id ?? null,
+    cuentaNombre: cuenta?.nombre ?? null,
+    cuentaDestinoId: cuentaDestino?.id ?? null,
+    cuentaDestinoNombre: cuentaDestino?.nombre ?? null,
+    categoriaId: esGasto ? (categoria?.id ?? undefined) : null,
+    categoriaNombre: categoria?.nombre ?? null,
+    propuestaCuenta: cuenta ? null : mov.cuentaMencionada,
+    propuestaCuentaDestino: esTransferencia && !cuentaDestino ? mov.cuentaDestinoMencionada : null,
+    propuestaCategoria: esGasto && !categoria ? mov.categoriaMencionada : null,
+    cuentasDisponibles: listas.cuentasDisponibles,
+    categoriasDisponibles: listas.categoriasDisponibles,
+  };
+}
+
+function etiquetaLote(pendiente) {
+  if (!pendiente.posicionLote) return '';
+  const monto = pendiente.monto ? ` ${mensajes.formatoPesos(pendiente.monto)}` : '';
+  const detalle = pendiente.descripcion ? ` · ${mensajes.escapar(pendiente.descripcion)}` : '';
+  return `<b>Movimiento ${pendiente.posicionLote} de ${pendiente.totalLote}</b> · ${pendiente.tipo}${monto}${detalle}\n`;
+}
+
+async function avanzarLote(ctx) {
+  const lote = lotePorChat.get(ctx.chat.id);
+  if (!lote) return;
+
+  const siguiente = lote.restantes.shift();
+  if (!siguiente) {
+    lotePorChat.delete(ctx.chat.id);
+    return;
+  }
+
+  lote.posicion += 1;
+  const pendiente = crearPendiente(lote.usuarioId, siguiente, lote.listas, lote.posicion, lote.total);
+  return continuar(ctx, crypto.randomBytes(4).toString('hex'), pendiente);
+}
+
+function cancelarLote(chatId) {
+  const lote = lotePorChat.get(chatId);
+  lotePorChat.delete(chatId);
+  if (!lote) return mensajes.cancelado;
+  return lote.restantes.length > 0
+    ? '🚫 Listo, cancelé este movimiento y los que faltaban.'
+    : '🚫 Listo, cancelé este movimiento.';
+}
+
+async function preguntar(ctx, preguntaId, pendiente, fase, texto, teclado) {
+  pendiente.fase = fase;
+  guardarPendiente(ctx.chat.id, preguntaId, pendiente);
+
+  const opciones = teclado ? { ...HTML, reply_markup: teclado } : HTML;
+  const enviado = await ctx.reply(etiquetaLote(pendiente) + texto, opciones);
+  pendiente.mensajeId = enviado.message_id;
+}
+
+async function preguntarCrear(ctx, preguntaId, pendiente, fase) {
+  const nombre = conversacion.capitalizar(pendiente[CAMPO_PROPUESTA[fase]]);
+  return preguntar(
+    ctx, preguntaId, pendiente, fase,
+    mensajes.proponerCrear(CLASE_ENTIDAD[fase], nombre),
+    tecladoCrear(preguntaId),
+  );
+}
+
+async function continuarCorreccion(ctx, preguntaId, pendiente) {
+  if (pendiente.propuestaCuenta) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCuenta');
+  if (pendiente.propuestaCuentaDestino) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCuentaDestino');
+  if (pendiente.propuestaCategoria) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCategoria');
+
+  cerrarPendiente(ctx.chat.id, preguntaId);
+  return aplicarCorreccion(ctx, pendiente.usuarioId, pendiente.cambios, pendiente.texto);
 }
 
 async function continuar(ctx, preguntaId, pendiente) {
+  if (pendiente.modo === 'correccion') return continuarCorreccion(ctx, preguntaId, pendiente);
+
+  if (!pendiente.monto) {
+    return preguntar(
+      ctx, preguntaId, pendiente, 'monto',
+      '💬 ¿De cuánto fue? Escríbelo, por ejemplo <code>20000</code> o <code>20 mil</code>.',
+      null,
+    );
+  }
+
   if (!pendiente.cuentaId) {
+    if (pendiente.propuestaCuenta) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCuenta');
     pendiente.fase = 'cuenta';
-    pendientes.set(preguntaId, pendiente);
-    return ctx.reply('¿Con cuál cuenta fue?', { ...HTML, reply_markup: tecladoCuentas(preguntaId, pendiente.cuentasDisponibles) });
+    const texto = pendiente.tipo === 'transferencia' ? '¿Desde cuál cuenta sale?' : '¿Con cuál cuenta fue?';
+    return preguntar(
+      ctx, preguntaId, pendiente, 'cuenta',
+      `${texto} Toca una opción o escribe el nombre.`,
+      tecladoCuentas(preguntaId, cuentasParaFase(pendiente)),
+    );
   }
 
   if (pendiente.tipo === 'transferencia' && !pendiente.cuentaDestinoId) {
+    if (pendiente.propuestaCuentaDestino) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCuentaDestino');
     pendiente.fase = 'cuentaDestino';
-    pendientes.set(preguntaId, pendiente);
-    return ctx.reply('¿Hacia cuál cuenta?', { ...HTML, reply_markup: tecladoCuentas(preguntaId, pendiente.cuentasDisponibles) });
+    return preguntar(
+      ctx, preguntaId, pendiente, 'cuentaDestino',
+      '¿Hacia cuál cuenta va? Toca una opción o escribe el nombre.',
+      tecladoCuentas(preguntaId, cuentasParaFase(pendiente)),
+    );
   }
 
   if (pendiente.tipo === 'gasto' && pendiente.categoriaId === undefined) {
-    pendiente.fase = 'categoria';
-    pendientes.set(preguntaId, pendiente);
-    return ctx.reply('¿En qué categoría la registro?', { ...HTML, reply_markup: tecladoCategorias(preguntaId, pendiente.categoriasDisponibles) });
+    if (pendiente.propuestaCategoria) return preguntarCrear(ctx, preguntaId, pendiente, 'crearCategoria');
+    return preguntar(
+      ctx, preguntaId, pendiente, 'categoria',
+      '¿En qué categoría lo registro? Toca una opción o escribe el nombre.',
+      tecladoCategorias(preguntaId, pendiente.categoriasDisponibles),
+    );
   }
 
-  pendientes.delete(preguntaId);
+  cerrarPendiente(ctx.chat.id, preguntaId);
   try {
     await guardarYResponder(ctx, pendiente);
   } catch (error) {
-    if (error.status) {
-      return ctx.reply(mensajes.noEntendido(error.message), HTML);
+    if (!error.status) throw error;
+    await ctx.reply(mensajes.noEntendido(error.message), HTML);
+  }
+
+  return avanzarLote(ctx);
+}
+
+function pareceRespuestaCorta(texto) {
+  return !/[?¿]/.test(texto) && conversacion.limpiar(texto).split(' ').length <= 5;
+}
+
+async function responderPreguntaPorTexto(ctx, usuarioId, texto) {
+  const activo = pendienteActivo(ctx.chat.id);
+  if (!activo) return false;
+
+  const { preguntaId, pendiente } = activo;
+  if (pendiente.usuarioId !== usuarioId) return false;
+
+  if (FASES_CREACION.includes(pendiente.fase)) {
+    if (conversacion.esAfirmacion(texto)) {
+      await resolverCreacion(ctx, preguntaId, pendiente, true);
+      return true;
     }
+    if (conversacion.esNegacion(texto)) {
+      await resolverCreacion(ctx, preguntaId, pendiente, false);
+      return true;
+    }
+  }
+
+  if (conversacion.esCancelacion(texto)) {
+    cerrarPendiente(ctx.chat.id, preguntaId);
+    await actualizarMensajePregunta(ctx, pendiente, '🚫 Pregunta cancelada.');
+    await ctx.reply(cancelarLote(ctx.chat.id), HTML);
+    return true;
+  }
+
+  if (FASES_CREACION.includes(pendiente.fase)) return false;
+
+  let confirmacion;
+
+  if (pendiente.fase === 'monto') {
+    const monto = conversacion.extraerMonto(texto);
+    if (!monto) return false;
+    pendiente.monto = monto;
+    confirmacion = `✅ Monto: ${mensajes.formatoPesos(monto)}`;
+  } else {
+    const opciones = pendiente.fase === 'categoria' ? pendiente.categoriasDisponibles : cuentasParaFase(pendiente);
+    if (conversacion.contieneMonto(texto) && !conversacion.coincideNombreExacto(texto, opciones)) return false;
+    if (!pareceRespuestaCorta(texto)) return false;
+
+    if (pendiente.fase === 'categoria') {
+      if (conversacion.esSinCategoria(texto)) {
+        aplicarCategoria(pendiente, null);
+      } else {
+        const categoria = conversacion.elegirOpcion(texto, pendiente.categoriasDisponibles);
+        if (!categoria) return false;
+        aplicarCategoria(pendiente, categoria);
+      }
+      confirmacion = `✅ Categoría: ${mensajes.escapar(pendiente.categoriaNombre || 'Sin categoría')}`;
+    } else {
+      const cuenta = conversacion.elegirOpcion(texto, cuentasParaFase(pendiente));
+      if (!cuenta) return false;
+      confirmacion = etiquetaCuenta(pendiente, cuenta);
+      aplicarCuenta(pendiente, cuenta);
+    }
+  }
+
+  await actualizarMensajePregunta(ctx, pendiente, confirmacion);
+  await continuar(ctx, preguntaId, pendiente);
+  return true;
+}
+
+async function crearPorPedido(ctx, usuarioId, r) {
+  const esCuenta = r.intencion === 'crear_cuenta';
+  const clase = esCuenta ? 'cuenta' : 'categoría';
+  const nombre = conversacion.capitalizar(r.nombre);
+
+  if (!nombre) return ctx.reply(mensajes.faltaNombre(clase), HTML);
+
+  const existentes = esCuenta ? r.cuentasDisponibles : r.categoriasDisponibles;
+  const repetida = existentes.find((e) => conversacion.limpiar(e.nombre) === conversacion.limpiar(nombre));
+  if (repetida) return ctx.reply(mensajes.yaExiste(clase, repetida.nombre), HTML);
+
+  const activo = pendienteActivo(ctx.chat.id);
+  const pendiente =
+    activo && activo.pendiente.usuarioId === usuarioId && activo.pendiente.modo === 'registro'
+      ? activo.pendiente
+      : null;
+
+  let fase = null;
+  if (pendiente && esCuenta && pendiente.fase === 'cuenta') fase = 'crearCuenta';
+  if (pendiente && esCuenta && pendiente.fase === 'cuentaDestino') fase = 'crearCuentaDestino';
+  if (pendiente && !esCuenta && pendiente.fase === 'categoria') fase = 'crearCategoria';
+
+  try {
+    if (fase) {
+      const entidad = await crearEntidad(pendiente, fase, nombre);
+      aplicarEntidadCreada(pendiente, fase, entidad);
+      await actualizarMensajePregunta(ctx, pendiente, mensajes.entidadCreada(clase, entidad.nombre));
+      return continuar(ctx, activo.preguntaId, pendiente);
+    }
+
+    const color = conversacion.elegirColor(existentes.map((e) => e.color));
+    const entidad = esCuenta
+      ? await cuentaService.crearCuenta(usuarioId, { nombre, color })
+      : await categoriaService.crearCategoria(usuarioId, { nombre, color, icono: 'otros' });
+
+    return ctx.reply(mensajes.creadaPorPedido(clase, entidad.nombre), HTML);
+  } catch (error) {
+    if (error.status) return ctx.reply(mensajes.noEntendido(error.message), HTML);
     throw error;
   }
 }
 
-async function procesarTexto(ctx, usuarioId, texto) {
+async function responderSinMovimiento(ctx, r, nombre, usuarioId, texto) {
+  if (r.intencion === 'deshacer') return deshacerUltimo(ctx, usuarioId);
+
+  if (r.intencion === 'corregir') {
+    const abierta = pendienteActivo(ctx.chat.id);
+    if (abierta) return ctx.reply(mensajes.recordatorioPregunta(abierta.pendiente.fase), HTML);
+    return corregirUltimo(ctx, usuarioId, r, texto);
+  }
+
+  if (r.intencion === 'crear_cuenta' || r.intencion === 'crear_categoria') {
+    return crearPorPedido(ctx, usuarioId, r);
+  }
+
+  if (r.intencion === 'consultar') {
+    return ctx.reply(await consultas.responder(usuarioId, r), HTML);
+  }
+  if (r.intencion === 'saludo') return ctx.reply(mensajes.saludo(nombre), HTML);
+  if (r.intencion === 'agradecimiento') return ctx.reply(mensajes.agradecimiento(), HTML);
+  if (r.intencion === 'ayuda') return ctx.reply(mensajes.formatos(r.cuentasDisponibles), HTML);
+
+  const activo = pendienteActivo(ctx.chat.id);
+  if (activo) return ctx.reply(mensajes.recordatorioPregunta(activo.pendiente.fase), HTML);
+
+  return ctx.reply(mensajes.noEntendido(), HTML);
+}
+
+async function procesarTexto(ctx, usuarioId, texto, nombre) {
   if (texto.length > LARGO_MAXIMO_MENSAJE) {
     return ctx.reply('🤏 Ese mensaje es muy largo. Cuéntamelo más corto, en una sola frase.', HTML);
   }
@@ -119,39 +713,34 @@ async function procesarTexto(ctx, usuarioId, texto) {
     return ctx.reply('🐢 Vas muy rápido, dame un momento y vuelve a intentarlo.', HTML);
   }
 
-  const r = await interpretacionService.interpretar(usuarioId, texto);
+  if (await responderPreguntaPorTexto(ctx, usuarioId, texto)) return;
 
-  if (!r.reconocido) {
-    return ctx.reply(mensajes.noEntendido(), HTML);
+  const r = await interpretacionService.interpretar(usuarioId, texto, ultimoValido(ctx.chat.id));
+
+  if (!r.reconocido) return responderSinMovimiento(ctx, r, nombre, usuarioId, texto);
+
+  const movimientos = [r, ...(r.adicionales || [])];
+  const conErrorFecha = movimientos.find((m) => m.errorFecha);
+  if (conErrorFecha) return ctx.reply(mensajes.fechaNoValida(conErrorFecha.errorFecha), HTML);
+
+  await descartarPreguntaActiva(ctx);
+  lotePorChat.delete(ctx.chat.id);
+
+  const listas = { cuentasDisponibles: r.cuentasDisponibles, categoriasDisponibles: r.categoriasDisponibles };
+  const total = movimientos.length;
+
+  if (total > 1) {
+    lotePorChat.set(ctx.chat.id, { usuarioId, restantes: movimientos.slice(1), posicion: 1, total, listas });
   }
 
-  const preguntaId = crypto.randomBytes(4).toString('hex');
-  const pendiente = {
-    usuarioId,
-    creadoEn: Date.now(),
-    tipo: r.tipo,
-    monto: r.monto,
-    descripcion: r.descripcion,
-    fecha: r.fecha,
-    cuentaId: r.cuenta?.id ?? null,
-    cuentaNombre: r.cuenta?.nombre ?? null,
-    cuentaDestinoId: r.tipo === 'transferencia' ? (r.cuentaDestino?.id ?? null) : null,
-    cuentaDestinoNombre: r.tipo === 'transferencia' ? (r.cuentaDestino?.nombre ?? null) : null,
-    categoriaId: r.tipo === 'gasto' ? (r.categoria?.id ?? undefined) : null,
-    categoriaNombre: r.tipo === 'gasto' ? (r.categoria?.nombre ?? null) : null,
-    cuentasDisponibles: r.cuentasDisponibles,
-    categoriasDisponibles: r.categoriasDisponibles,
-  };
-
-  return continuar(ctx, preguntaId, pendiente);
+  const pendiente = crearPendiente(usuarioId, r, listas, total > 1 ? 1 : null, total > 1 ? total : null);
+  return continuar(ctx, crypto.randomBytes(4).toString('hex'), pendiente);
 }
-
 
 async function manejarDeshacer(ctx, usuarioId, tipo, id) {
   try {
-    if (tipo === 'gasto') await gastoService.eliminarGasto(usuarioId, id);
-    else if (tipo === 'ingreso') await ingresoService.eliminarIngreso(usuarioId, id);
-    else await transferenciaService.eliminarTransferencia(usuarioId, id);
+    await eliminarMovimiento(usuarioId, tipo, id);
+    if (ultimoPorChat.get(ctx.chat.id)?.id === id) ultimoPorChat.delete(ctx.chat.id);
 
     await ctx.answerCallbackQuery();
     await ctx.editMessageText('↩️ Movimiento deshecho.', SIN_TECLADO);
@@ -185,36 +774,37 @@ async function manejarBoton(ctx) {
   }
 
   if (pendienteVencido(pendiente)) {
-    pendientes.delete(preguntaId);
+    cerrarPendiente(ctx.chat.id, preguntaId);
     return ctx.answerCallbackQuery({ text: 'Esta pregunta ya venció, escribe el mensaje de nuevo.' });
   }
 
   try {
+    if (accion === 'crear') {
+      if (!FASES_CREACION.includes(pendiente.fase)) {
+        return ctx.answerCallbackQuery({ text: 'Esa opción ya no es válida.' });
+      }
+      await ctx.answerCallbackQuery();
+      return resolverCreacion(ctx, preguntaId, pendiente, valor === 'si');
+    }
+
     if (accion === 'cuenta') {
       const cuenta = pendiente.cuentasDisponibles.find((c) => c.id === valor);
       if (!cuenta) return ctx.answerCallbackQuery({ text: 'Esa opción ya no es válida.' });
 
-      if (pendiente.fase === 'cuentaDestino') {
-        pendiente.cuentaDestinoId = cuenta.id;
-        pendiente.cuentaDestinoNombre = cuenta.nombre;
-      } else {
-        pendiente.cuentaId = cuenta.id;
-        pendiente.cuentaNombre = cuenta.nombre;
-      }
+      const confirmacion = etiquetaCuenta(pendiente, cuenta);
+      aplicarCuenta(pendiente, cuenta);
       await ctx.answerCallbackQuery();
-      await ctx.editMessageText(`✅ Cuenta: ${mensajes.escapar(cuenta.nombre)}`, SIN_TECLADO);
+      await ctx.editMessageText(confirmacion, SIN_TECLADO);
       return continuar(ctx, preguntaId, pendiente);
     }
 
     if (accion === 'categoria') {
       if (valor === 'ninguna') {
-        pendiente.categoriaId = null;
-        pendiente.categoriaNombre = null;
+        aplicarCategoria(pendiente, null);
       } else {
         const categoria = pendiente.categoriasDisponibles.find((c) => c.id === valor);
         if (!categoria) return ctx.answerCallbackQuery({ text: 'Esa opción ya no es válida.' });
-        pendiente.categoriaId = categoria.id;
-        pendiente.categoriaNombre = categoria.nombre;
+        aplicarCategoria(pendiente, categoria);
       }
       await ctx.answerCallbackQuery();
       await ctx.editMessageText(`✅ Categoría: ${mensajes.escapar(pendiente.categoriaNombre || 'Sin categoría')}`, SIN_TECLADO);

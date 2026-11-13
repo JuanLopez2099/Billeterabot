@@ -1,4 +1,7 @@
-# Changelog
+## 1.3.0
+
+### Agregado
+- El bot ahora permite corregir o deshacer movimientos con mensajes, proponer la creación de cuentas y categorías faltantes, registrar fechas naturales, responder consultas sobre las finanzas y registrar varios movimientos en un mismo mensaje.
 
 ## 1.2.0
 
