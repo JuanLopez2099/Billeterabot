@@ -1,3 +1,8 @@
+## 1.4.0
+
+### Mejorado
+- Interfaz adaptable a móviles con menú de navegación para acceder a las secciones, vincular Telegram y cerrar sesión. El dashboard reorganiza su contenido para pantallas pequeñas.
+
 ## 1.3.0
 
 ### Agregado
