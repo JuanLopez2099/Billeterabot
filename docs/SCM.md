@@ -1,6 +1,6 @@
 # SCM - Billeterabot
 
-Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.3 - Actualizado: 2026-11-13
+Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.5 - Actualizado: 2026-11-14
 
 ## 1. Ítems de configuración
 
@@ -40,6 +40,7 @@ Versionado semántico `MAJOR.MINOR.PATCH`: PATCH corrige un error, MINOR agrega 
 | 1.1.0 | Cuentas propias con nombre y color, junto con las cuentas predefinidas | Desarrollador principal | 2026-11-08 |
 | 1.2.0 | Registro de gastos, ingresos y transferencias directamente desde el dashboard | Desarrollador principal | 2026-11-09 |
 | 1.3.0 | Mejoras conversacionales del bot: correcciones, creación sugerida, fechas naturales, consultas y múltiples movimientos | Desarrollador principal | 2026-11-13 |
+| 1.4.0 | Interfaz adaptable a móviles con menú de navegación y dashboard reorganizado para pantallas pequeñas | Desarrollador principal | 2026-11-14 |
 
 ## 4. Control de cambios
 
@@ -85,11 +86,21 @@ Flujo: solicitud (issue de GitHub) → ficha en este documento → decisión (de
 | Decisión | Aprobada: ampliar el registro por lenguaje natural y habilitar consultas financieras |
 | Nueva linea base | 1.3.0 |
 
+### CR-005 Rediseño de interfaz móvil
+
+| Campo | Respuesta |
+|---|---|
+| Ítems afectados | `client/src/App.jsx`, `client/src/components/Topbar.jsx`, `client/src/styles/topbar.css`, `client/src/styles/dashboard.css` y nuevo hook `client/src/utils/useEsMovil.js` |
+| Impacto | La navegación se adapta a pantallas móviles mediante un menú hamburguesa; el menú permite cambiar de sección, vincular Telegram y cerrar sesión, y el dashboard reorganiza sus tarjetas en una columna |
+| Riesgo | Un cambio de tamaño de pantalla podría dejar desactualizada la vista móvil; el hook escucha cambios del ancho de pantalla y actualiza el modo de navegación |
+| Decisión | Aprobada: adaptar la navegación y la distribución del dashboard a dispositivos móviles |
+| Nueva linea base | 1.4.0 |
+
 ## 5. Ambiente y estado
 
 | Ambiente | Rama | Versión | Estado |
 |---|---|---|---|
-| Desarrollo | Develop | 1.3.0 | Cambios validados manualmente; versión integrada |
+| Desarrollo | Develop | 1.4.0 | Cambio integrado en develop; pendiente de publicación |
 | Producción | Master | 1.3.0 | Integrada mediante PR #51 |
 
 Volver atrás: como master se despliega solo, revertir el merge con un pull request vuelve a desplegar la versión anterior. También se puede restaurar un despliegue previo desde el panel de Vercel y de Railway.

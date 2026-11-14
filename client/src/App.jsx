@@ -16,11 +16,20 @@ import Ingresos from './pages/Ingresos';
 import SinCategoriaGastos from './pages/SinCategoriaGastos';
 import { CuentasProvider } from './context/CuentasProvider';
 import Cuentas from './pages/Cuentas';
+import VincularTelegram from './components/VincularTelegram';
+import { useEsMovil } from './utils/useEsMovil';
 
 function App() {
   const { user, loading, signOut, recoveryMode, nombre, sincronizado } = useAuth();
   const [vista, setVista] = useState('login');
   const [pantalla, setPantalla] = useState('general');
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const esMovil = useEsMovil();
+
+  function cambiarPantalla(nueva) {
+    setPantalla(nueva);
+    setMenuAbierto(false);
+  }
 
   if (loading) return <p>Cargando...</p>;
 
@@ -35,10 +44,27 @@ function App() {
       <CategoriasProvider>
         <CuentasProvider>
           <div>
-            <Topbar nombre={nombre} onCerrarSesion={signOut} />
+            <Topbar
+              nombre={nombre}
+              onCerrarSesion={signOut}
+              esMovil={esMovil}
+              menuAbierto={menuAbierto}
+              onToggleMenu={() => setMenuAbierto((abierto) => !abierto)}
+            />
             <div className="layout-con-sidebar">
-              <Sidebar pantalla={pantalla} onCambiar={setPantalla} />
-              <div style={{ flex: 1 }}>
+              <div className={`menu-movil ${menuAbierto ? 'menu-movil--abierto' : ''}`}>
+                {esMovil && nombre && <div className="menu-movil-usuario">{nombre}</div>}
+                <Sidebar pantalla={pantalla} onCambiar={cambiarPantalla} />
+                {esMovil && (
+                  <div className="menu-movil-acciones">
+                    <VincularTelegram />
+                    <button className="boton boton-secundario" onClick={signOut}>
+                      Cerrar sesión
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className={menuAbierto ? 'contenido--oculto' : ''} style={{ flex: 1 }}>
                 {pantalla === 'general' && <General />}
                 {pantalla === 'ingresos' && <Ingresos />}
                 {pantalla === 'transferencias' && <Transferencias />}

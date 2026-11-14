@@ -8,6 +8,7 @@ Aplicación web para llevar el control de tus finanzas personales: registra gast
 - Gastos con categorías propias (incluye gastos sin categoría), ingresos y transferencias entre cuentas.
 - Gestión de cuentas: usa cuentas predefinidas y crea cuentas propias con nombre y color.
 - Dashboard con resumen mensual, saldo por cuenta, gráficos por categoría, top de gastos e historial. Permite iniciar registros de gastos, ingresos y transferencias desde un formulario directo.
+- Interfaz adaptable a móviles con menú de navegación, acceso a las secciones, vinculación de Telegram y cierre de sesión.
 - Bot de Telegram con interpretación de lenguaje natural: registra movimientos, permite corregirlos o deshacerlos, sugiere crear cuentas o categorías faltantes, entiende fechas y responde consultas financieras. También admite varios movimientos en un mensaje.
 
 ## Tecnologías
