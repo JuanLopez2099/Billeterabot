@@ -1,6 +1,6 @@
 # SCM - Billeterabot
 
-Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.3 - Actualizado: 2026-11-13
+Equipo: Juan Camilo Lopez Gonzalez - Versión del documento: 1.4 - Actualizado: 2026-11-13
 
 ## 1. Ítems de configuración
 
@@ -84,6 +84,16 @@ Flujo: solicitud (issue de GitHub) → ficha en este documento → decisión (de
 | Riesgo | Interpretación incorrecta del mensaje, fechas o periodo; el servidor valida los datos y aplica las reglas de los servicios existentes antes de guardar |
 | Decisión | Aprobada: ampliar el registro por lenguaje natural y habilitar consultas financieras |
 | Nueva linea base | 1.3.0 |
+
+### CR-005 Rediseño de interfaz móvil
+
+| Campo | Respuesta |
+|---|---|
+| Ítems afectados | `client/src/App.jsx`, `client/src/components/Topbar.jsx`, `client/src/styles/topbar.css`, `client/src/styles/dashboard.css` y nuevo hook `client/src/utils/useEsMovil.js` |
+| Impacto | La navegación se adapta a pantallas móviles mediante un menú hamburguesa; el menú permite cambiar de sección, vincular Telegram y cerrar sesión, y el dashboard reorganiza sus tarjetas en una columna |
+| Riesgo | Un cambio de tamaño de pantalla podría dejar desactualizada la vista móvil; el hook escucha cambios del ancho de pantalla y actualiza el modo de navegación |
+| Decisión | Aprobada: adaptar la navegación y la distribución del dashboard a dispositivos móviles |
+| Nueva linea base | 1.4.0 |
 
 ## 5. Ambiente y estado
 
